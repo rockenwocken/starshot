@@ -30,10 +30,10 @@ const LAST = [
 ];
 const TAGS = ['チュッ！', 'すごい！', 'かわいい！', 'ファイト！', 'いくぞ！', 'キラキラ', 'ドキドキ', 'ムキムキ！'];
 
-export function posePrompts() {
+export function posePrompts(n = 4) {
   const out = [];
   const used = new Set();
-  while (out.length < 3) {
+  while (out.length < n - 1) {
     const p = Math.random() < 0.5 ? `${pick(ACTIONS)} LIKE ${pick(CREATURES)}!` : pick(CLASSICS);
     if (!used.has(p)) { used.add(p); out.push({ text: p, tag: pick(TAGS) }); }
   }

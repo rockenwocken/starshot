@@ -167,6 +167,11 @@ export function jingle() {
   tone({ type: 'triangle', f: 784, dur: 0.6, vol: 0.18, t: 0.5 });
 }
 
+export function blip() {
+  tone({ type: 'square', f: 660, f2: 1320, dur: 0.12, vol: 0.14 });
+  tone({ type: 'square', f: 990, f2: 1980, dur: 0.12, vol: 0.08, t: 0.06 });
+}
+
 export function click() {
   tone({ type: 'square', f: 1200, f2: 600, dur: 0.05, vol: 0.12 });
 }

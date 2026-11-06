@@ -1,13 +1,13 @@
 # ★ STARSHOT ★ スターショット
 
-A 4-panel chaos photo booth for your phone, with arcade vibes inspired by *Space Channel 5*, *Muscle March* and *Dance Dance Revolution*.
+A 2-to-6-panel chaos photo booth for your phone, with arcade vibes inspired by *Space Channel 5*, *Muscle March* and *Dance Dance Revolution*.
 
-**Ablauf:** Drück **SHOT!** → zufällige Ansage → Countdown **3 · 2 · 1** → alle ~1 Sekunde wird ein zufälliges Viertel festgehalten. Die vier Viertel sind Ausschnitte aus *einem* Bild, aufgenommen zu vier verschiedenen Momenten: Am Ende ergibt sich ein Gesamtbild aus vier Schnipseln. Jedes Foto bekommt ein zufälliges, albernes Geräusch und eine Bewertung, das letzte ist **immer ein Furz**. 💨
+**Ablauf:** Drück **SHOT!** → zufällige Ansage → Countdown **3 · 2 · 1** → alle ~1 Sekunde wird ein zufälliger Teil festgehalten. Alle Teile sind Ausschnitte aus *einem* Bild, aufgenommen zu verschiedenen Momenten: Am Ende ergibt sich ein Gesamtbild aus lauter Schnipseln. Jedes Foto bekommt ein zufälliges, albernes Geräusch und eine Bewertung, das letzte ist **immer ein Furz**. 💨
 
 ## Was ist jedes Mal zufällig?
 
 - **Start-Ansage** aus `assets/start/` (nie zweimal dieselbe hintereinander)
-- **Layout:** Streifen, Säulen, 2×2, Boss + Sidekicks, Blitz-Schrägen, Pizza, Tornado … (gespiegelt und leicht verschoben)
+- **Layout:** 2 bis 6 Teile (jede Anzahl gleich oft), über 30 Formen: Streifen, Raster, Schrägen, Pizza, Kreise, Bullseye, Sterne, Bubbles und Gesichts-Layouts (Augen, Nase, Mund aus verschiedenen Momenten). Tippen aufs Bild vor dem Auslösen würfelt ein neues Layout.
 - **Reihenfolge**, in der die Viertel gefüllt werden
 - **Posen-Aufgaben** (Madlibs: `{ACTION} LIKE {CREATURE}!` oder Klassiker wie `UP! UP! CHU! CHU! CHU!`)
 - **Geräusche** (Boing, Quietsch-Ente, Laser, Hupe, Kuhglocke, Kazoo, …): alles live per Web Audio synthetisiert, jeder Furz klingt anders

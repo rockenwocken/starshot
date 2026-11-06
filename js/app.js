@@ -40,6 +40,8 @@ let finalRank = '';
 let bgLayer = null;
 let muted = false;
 let roundStickers = [];
+let info = []; // per panel: { center:[nx,ny], area } computed from what is actually visible
+let stickerSlots = [];
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -55,30 +57,73 @@ function polyPath(ctx, poly) {
   ctx.closePath();
 }
 
-function bbox(poly) {
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const p of poly) {
-    const [x, y] = toPx(p);
-    x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+// Works out what is visible of every panel (later panels cover earlier ones) by sampling a grid.
+const probe = document.createElement('canvas').getContext('2d');
+function analyse(panels) {
+  const paths = panels.map((poly) => {
+    const p = new Path2D();
+    poly.forEach((pt, i) => { const [x, y] = toPx(pt); i ? p.lineTo(x, y) : p.moveTo(x, y); });
+    p.closePath();
+    return p;
+  });
+  const step = 16;
+  const acc = panels.map(() => ({ n: 0, sx: 0, sy: 0, pts: [] }));
+  for (let y = PA.y + step / 2; y < PA.y + PA.h; y += step) {
+    for (let x = PA.x + step / 2; x < PA.x + PA.w; x += step) {
+      for (let i = panels.length - 1; i >= 0; i--) {
+        if (probe.isPointInPath(paths[i], x, y)) {
+          const a = acc[i];
+          a.n++; a.sx += x; a.sy += y; a.pts.push([x, y]);
+          break;
+        }
+      }
+    }
   }
-  x0 = Math.max(x0, PA.x); y0 = Math.max(y0, PA.y);
-  x1 = Math.min(x1, PA.x + PA.w); y1 = Math.min(y1, PA.y + PA.h);
-  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  return acc.map((a) => {
+    if (!a.n) return { center: [0.5, 0.5], area: 0 };
+    const cx = a.sx / a.n, cy = a.sy / a.n;
+    // the centroid of a ring-shaped area can sit outside it: snap to the nearest visible point
+    let best = a.pts[0], bd = Infinity;
+    for (const p of a.pts) {
+      const d = (p[0] - cx) ** 2 + (p[1] - cy) ** 2;
+      if (d < bd) { bd = d; best = p; }
+    }
+    return { center: [best[0] / W, best[1] / H], area: a.n * step * step };
+  });
 }
 
-// Visible centre of a panel (polygon clipped to the photo area), in 0..1 of the canvas.
-function panelCenter(poly) {
-  const clamp = (v) => Math.min(1, Math.max(0, v));
-  const pts = poly.map(([x, y]) => [clamp(x), clamp(y)]);
-  const b = bbox(poly);
-  let cx = 0, cy = 0;
-  pts.forEach(([x, y]) => { cx += x; cy += y; });
-  cx /= pts.length; cy /= pts.length;
-  let [px, py] = toPx([cx, cy]);
-  // keep it inside the bbox
-  px = Math.min(Math.max(px, b.x + 60), b.x + b.w - 60);
-  py = Math.min(Math.max(py, b.y + 40), b.y + b.h - 40);
-  return [px / W, py / H];
+const panelCenter = (i) => info[i].center;
+
+// sticker spots around the edge of the picture, away from faces in the middle
+function makeStickerSlots() {
+  const m = 52, L = PA.x + m, R = PA.x + PA.w - m, T = PA.y + m, B = PA.y + PA.h - m;
+  const MX = PA.x + PA.w / 2, MY = PA.y + PA.h / 2;
+  return [[L, T], [R, T + 50], [L, B], [R, B], [L, MY], [R, MY], [MX, B], [PA.x + PA.w * 0.3, T]];
+}
+
+// Panel outlines are drawn on their own layer: before stroking panel i, its area is erased,
+// so edges of lower panels never show through panels that sit on top of them.
+const lineLayer = document.createElement('canvas');
+lineLayer.width = W; lineLayer.height = H;
+const lg = lineLayer.getContext('2d');
+function drawOutlines(strokes) {
+  lg.clearRect(0, 0, W, H);
+  lg.lineJoin = 'round';
+  layout.panels.forEach((poly, i) => {
+    lg.globalCompositeOperation = 'destination-out';
+    polyPath(lg, poly);
+    lg.fill();
+    lg.globalCompositeOperation = 'source-over';
+    for (const st of strokes(i)) {
+      lg.setLineDash(st.dash || []);
+      lg.lineDashOffset = st.offset || 0;
+      lg.lineWidth = st.width;
+      lg.strokeStyle = st.color;
+      polyPath(lg, poly);
+      lg.stroke();
+    }
+  });
+  g.drawImage(lineLayer, 0, 0);
 }
 
 function drawCover(ctx, src, sw, sh, b, mirror) {
@@ -178,7 +223,7 @@ function roundRect(ctx, x, y, w, h, r) {
 
 // ---------- rendering ----------
 function placeholder(i, poly, t) {
-  const b = bbox(poly);
+  const b = PA;
   g.fillStyle = PANEL_COLORS[i % PANEL_COLORS.length];
   g.fillRect(b.x, b.y, b.w, b.h);
   // moving stripes
@@ -196,8 +241,8 @@ function placeholder(i, poly, t) {
     g.fill();
   }
   g.restore();
-  const [cx, cy] = panelCenter(poly);
-  const size = Math.min(150, Math.max(60, Math.min(b.w, b.h) * 0.55));
+  const [cx, cy] = panelCenter(i);
+  const size = Math.min(150, Math.max(50, Math.sqrt(info[i].area) * 0.45));
   g.save();
   g.translate(cx * W, cy * H);
   g.rotate(Math.sin(t / 300 + i) * 0.15);
@@ -266,32 +311,17 @@ function render(t) {
     captures.forEach((c) => c && drawSticker(c));
   }
 
-  // outlines
-  if (layout && state !== 'done') {
-    g.lineJoin = 'round';
-    if (state === 'ready') {
-      g.setLineDash([26, 18]);
-      g.lineDashOffset = -t / 30;
-      g.lineWidth = 8;
-      g.strokeStyle = 'rgba(255,250,242,0.9)';
-      layout.panels.forEach((p) => { polyPath(g, p); g.stroke(); });
-      g.setLineDash([]);
-    } else if (state === 'running') {
-      // seams only while shooting — the finished picture is seamless
-      g.lineWidth = 18;
-      g.strokeStyle = '#120620';
-      layout.panels.forEach((p) => { polyPath(g, p); g.stroke(); });
-      g.lineWidth = 5;
-      g.strokeStyle = '#fffaf2';
-      layout.panels.forEach((p) => { polyPath(g, p); g.stroke(); });
-      if (state === 'running' && active >= 0 && !captures[active]) {
-        const pulse = 0.5 + 0.5 * Math.sin(t / 90);
-        g.lineWidth = 12 + pulse * 10;
-        g.strokeStyle = pulse > 0.5 ? '#ffe600' : '#00e5ff';
-        polyPath(g, layout.panels[active]);
-        g.stroke();
-      }
-    }
+  // outlines (only the visible part of each panel edge)
+  if (layout && state === 'ready') {
+    drawOutlines(() => [{ width: 8, color: 'rgba(255,250,242,0.9)', dash: [26, 18], offset: -t / 30 }]);
+  } else if (layout && state === 'running') {
+    // seams only while shooting — the finished picture is seamless
+    const pulse = 0.5 + 0.5 * Math.sin(t / 90);
+    drawOutlines((i) => {
+      const st = [{ width: 18, color: '#120620' }, { width: 5, color: '#fffaf2' }];
+      if (i === active && !captures[active]) st.push({ width: 12 + pulse * 10, color: pulse > 0.5 ? '#ffe600' : '#00e5ff' });
+      return st;
+    });
   }
   g.restore();
 
@@ -359,10 +389,13 @@ function drawFooter(t) {
     g.textAlign = 'center';
     g.font = '28px "Press Start 2P"';
     g.fillStyle = Math.floor(t / 500) % 2 ? '#ffe600' : '#fffaf2';
-    g.fillText('PRESS SHOT!', cx, 1320);
+    g.fillText('PRESS SHOT!', cx, 1308);
     g.font = '18px "Press Start 2P"';
     g.fillStyle = '#ff7ad9';
-    g.fillText(`STAGE: ${layout ? layout.name : '???'}`, cx, 1372);
+    g.fillText(layout ? `STAGE: ${layout.name} ★ ${layout.panels.length} SHOTS` : 'STAGE: ???', cx, 1354);
+    g.font = '13px "Press Start 2P"';
+    g.fillStyle = 'rgba(255,250,242,0.6)';
+    g.fillText('TAP THE PICTURE FOR A NEW STAGE', cx, 1394);
   }
   g.restore();
 }
@@ -380,8 +413,6 @@ function loop(t) {
 
 // ---------- capture ----------
 function capturePanel(i) {
-  const poly = layout.panels[i];
-  const b = bbox(poly);
   // snapshot of the full frame — together the four slices form one picture
   const c = document.createElement('canvas');
   c.width = PA.w; c.height = PA.h;
@@ -389,19 +420,9 @@ function capturePanel(i) {
   if (videoReady()) {
     drawCover(x, video, video.videoWidth, video.videoHeight, { x: 0, y: 0, w: PA.w, h: PA.h }, facing === 'user');
   }
-  // sticker tucked into the panel's outermost corner, away from the face in the middle
-  const [ccx, ccy] = panelCenter(poly);
-  const pcx = ccx * W, pcy = ccy * H;
-  const mid = [PA.x + PA.w / 2, PA.y + PA.h / 2];
-  const clampPA = ([x, y]) => [Math.min(Math.max(x, PA.x), PA.x + PA.w), Math.min(Math.max(y, PA.y), PA.y + PA.h)];
-  const corner = poly.map((p) => clampPA(toPx(p)))
-    .sort((a, b2) => Math.hypot(b2[0] - mid[0], b2[1] - mid[1]) - Math.hypot(a[0] - mid[0], a[1] - mid[1]))[0];
-  const dx = pcx - corner[0], dy = pcy - corner[1];
-  const len = Math.hypot(dx, dy) || 1;
-  const inset = Math.min(70, len * 0.4);
-  const m = 46;
-  const sx = Math.min(Math.max(corner[0] + (dx / len) * inset, PA.x + m), PA.x + PA.w - m);
-  const sy = Math.min(Math.max(corner[1] + (dy / len) * inset, PA.y + m), PA.y + PA.h - m);
+  // sticker in a free spot around the edge
+  const [sx0, sy0] = stickerSlots[Object.values(captures).filter(Boolean).length % stickerSlots.length];
+  const sx = sx0 + (Math.random() - 0.5) * 24, sy = sy0 + (Math.random() - 0.5) * 24;
   captures[i] = {
     img: c,
     sticker: roundStickers[i],
@@ -413,7 +434,7 @@ function capturePanel(i) {
 // ---------- overlay fx ----------
 function showBanner(p, panel = -1) {
   // keep the speech bubble away from the panel that is about to be shot
-  const low = panel >= 0 && panelCenter(layout.panels[panel])[1] < 0.5;
+  const low = panel >= 0 && panelCenter(panel)[1] < 0.5;
   banner.classList.toggle('low', low);
   banner.classList.remove('hidden');
   banner.querySelector('.banner-text').textContent = p.text;
@@ -444,7 +465,7 @@ function flash(big = false) {
 }
 
 function popJudge(j, i, big = false) {
-  const [x, y] = panelCenter(layout.panels[i]);
+  const [x, y] = panelCenter(i);
   const el = document.createElement('div');
   el.className = 'judge' + (big ? ' big' : '');
   el.style.left = big ? '50%' : `${Math.min(Math.max(x * 100, 32), 68)}%`;
@@ -461,11 +482,17 @@ function popJudge(j, i, big = false) {
 }
 
 // ---------- the show ----------
-function newRound() {
-  sfx.stopResult();
-  layout = randomLayout();
+function setLayout() {
+  layout = randomLayout(PA.w / PA.h);
+  info = analyse(layout.panels);
   captures = layout.panels.map(() => null);
   roundStickers = shuffle(STICKERS);
+  stickerSlots = shuffle(makeStickerSlots());
+}
+
+function newRound() {
+  sfx.stopResult();
+  setLayout();
   active = -1;
   score = 0;
   combo = 0;
@@ -485,9 +512,11 @@ async function shoot() {
   btnShoot.disabled = true;
   btnFlip.disabled = true;
 
-  const order = shuffle([0, 1, 2, 3]);
-  const prompts = posePrompts();
-  const sounds = shuffle(sfx.FUNNY).slice(0, 3);
+  const n = layout.panels.length;
+  const order = shuffle([...Array(n).keys()]);
+  const prompts = posePrompts(n);
+  const sounds = shuffle(sfx.FUNNY).slice(0, n - 1);
+  const pts = (v) => Math.round((v * 4) / n / 10) * 10; // scores stay comparable for 2–6 shots
 
   // 1. the voice
   showBanner({ text: 'GET READY!', tag: 'いくぞ！' });
@@ -495,7 +524,7 @@ async function shoot() {
   await wait(Math.min(vd, 3.2) * 1000 + 150);
 
   // 2. beat + countdown, first panel already live
-  const totalBeats = Math.ceil(((COUNT_STEP * 3 + INTERVAL * 3) / 1000) / 0.5) + 2;
+  const totalBeats = Math.ceil(((COUNT_STEP * 3 + INTERVAL * (n - 1)) / 1000) / 0.5) + 2;
   sfx.beat(totalBeats, 0.5);
   active = order[0];
   showBanner(prompts[0], active);
@@ -506,16 +535,16 @@ async function shoot() {
   }
   countEl.classList.add('hidden');
 
-  // 3. four photos
-  for (let k = 0; k < 4; k++) {
+  // 3. the photos
+  for (let k = 0; k < n; k++) {
     const i = order[k];
     capturePanel(i);
-    const last = k === 3;
+    const last = k === n - 1;
     combo++;
     if (last) {
       sfx.fart();
       flash(true);
-      score += FART_JUDGE.s;
+      score += pts(FART_JUDGE.s);
       popJudge(FART_JUDGE, i, true);
       hideBanner();
       active = -1;
@@ -523,7 +552,7 @@ async function shoot() {
       sounds[k]();
       flash(false);
       const j = judge();
-      score += j.s;
+      score += pts(j.s);
       popJudge(j, i);
       active = order[k + 1];
       showBanner(prompts[k + 1], active);
@@ -616,6 +645,12 @@ $('#btn-start').addEventListener('click', async () => {
 });
 
 btnShoot.addEventListener('click', shoot);
+cv.addEventListener('click', () => {
+  if (state !== 'ready') return;
+  sfx.initAudio();
+  sfx.blip();
+  setLayout();
+});
 btnFlip.addEventListener('click', async () => {
   if (state !== 'ready') return;
   sfx.click();
