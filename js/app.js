@@ -6,7 +6,7 @@ import { posePrompts, judge, FART_JUDGE, title, rank, shuffle, pick } from './wo
 // ---------- config ----------
 const W = 1080, H = 1440;
 const PA = { x: 40, y: 168, w: 1000, h: 1072 }; // photo area
-const INTERVAL = 1000; // ms between photos
+const INTERVAL = 2000; // ms between photos
 const COUNT_STEP = 1000; // ms per countdown number
 const PANEL_COLORS = ['#ff2e88', '#00e5ff', '#ffe600', '#7a2cff', '#ff7a00', '#3dff8b'];
 const STICKERS = ['✨', '⭐', '💥', '💪', '💖', '🌟', '⚡', '🔥', '🍣', '👾', '🎤', '🍜'];
@@ -39,6 +39,7 @@ let finalTitle = '';
 let finalRank = '';
 let bgLayer = null;
 let muted = false;
+let roundStickers = [];
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -212,9 +213,8 @@ function placeholder(i, poly, t) {
   g.restore();
 }
 
-function drawSticker(c, poly) {
-  const b = bbox(poly);
-  const size = Math.max(54, Math.min(b.w, b.h) * 0.22);
+function drawSticker(c) {
+  const size = 66;
   const [x, y] = c.stickerPos;
   g.save();
   g.translate(x, y);
@@ -245,6 +245,8 @@ function render(t) {
   if (state === 'ready' || state === 'title') {
     if (videoReady()) drawCover(g, video, video.videoWidth, video.videoHeight, PA, mirror);
   } else if (layout) {
+    // base layer under the slices so anti-aliased clip edges don't leave hairline seams
+    if (state === 'done' && captures[0]) g.drawImage(captures[0].img, PA.x, PA.y, PA.w, PA.h);
     layout.panels.forEach((poly, i) => {
       g.save();
       polyPath(g, poly);
@@ -253,7 +255,6 @@ function render(t) {
       if (c) {
         // every snapshot covers the whole photo area; the panel clip shows only its slice
         g.drawImage(c.img, PA.x, PA.y, PA.w, PA.h);
-        drawSticker(c, poly);
       } else if (i === active && videoReady()) {
         drawCover(g, video, video.videoWidth, video.videoHeight, PA, mirror);
       } else {
@@ -261,10 +262,12 @@ function render(t) {
       }
       g.restore();
     });
+    // stickers on top, not clipped by the panel edges
+    captures.forEach((c) => c && drawSticker(c));
   }
 
   // outlines
-  if (layout) {
+  if (layout && state !== 'done') {
     g.lineJoin = 'round';
     if (state === 'ready') {
       g.setLineDash([26, 18]);
@@ -273,7 +276,8 @@ function render(t) {
       g.strokeStyle = 'rgba(255,250,242,0.9)';
       layout.panels.forEach((p) => { polyPath(g, p); g.stroke(); });
       g.setLineDash([]);
-    } else {
+    } else if (state === 'running') {
+      // seams only while shooting — the finished picture is seamless
       g.lineWidth = 18;
       g.strokeStyle = '#120620';
       layout.panels.forEach((p) => { polyPath(g, p); g.stroke(); });
@@ -385,16 +389,23 @@ function capturePanel(i) {
   if (videoReady()) {
     drawCover(x, video, video.videoWidth, video.videoHeight, { x: 0, y: 0, w: PA.w, h: PA.h }, facing === 'user');
   }
-  // sticker at a random spot near an edge (convex mix of centre and a corner)
+  // sticker tucked into the panel's outermost corner, away from the face in the middle
   const [ccx, ccy] = panelCenter(poly);
-  const corner = toPx(poly[Math.floor(Math.random() * poly.length)]);
-  const k = 0.55 + Math.random() * 0.15;
-  const sx = ccx * W + (corner[0] - ccx * W) * k;
-  const sy = ccy * H + (corner[1] - ccy * H) * k;
+  const pcx = ccx * W, pcy = ccy * H;
+  const mid = [PA.x + PA.w / 2, PA.y + PA.h / 2];
+  const clampPA = ([x, y]) => [Math.min(Math.max(x, PA.x), PA.x + PA.w), Math.min(Math.max(y, PA.y), PA.y + PA.h)];
+  const corner = poly.map((p) => clampPA(toPx(p)))
+    .sort((a, b2) => Math.hypot(b2[0] - mid[0], b2[1] - mid[1]) - Math.hypot(a[0] - mid[0], a[1] - mid[1]))[0];
+  const dx = pcx - corner[0], dy = pcy - corner[1];
+  const len = Math.hypot(dx, dy) || 1;
+  const inset = Math.min(70, len * 0.4);
+  const m = 46;
+  const sx = Math.min(Math.max(corner[0] + (dx / len) * inset, PA.x + m), PA.x + PA.w - m);
+  const sy = Math.min(Math.max(corner[1] + (dy / len) * inset, PA.y + m), PA.y + PA.h - m);
   captures[i] = {
     img: c,
-    sticker: pick(STICKERS),
-    stickerPos: [Math.min(Math.max(sx, b.x + 40), b.x + b.w - 40), Math.min(Math.max(sy, b.y + 40), b.y + b.h - 40)],
+    sticker: roundStickers[i],
+    stickerPos: [sx, sy],
     stickerRot: (Math.random() - 0.5) * 0.8,
   };
 }
@@ -453,6 +464,7 @@ function popJudge(j, i, big = false) {
 function newRound() {
   layout = randomLayout();
   captures = layout.panels.map(() => null);
+  roundStickers = shuffle(STICKERS);
   active = -1;
   score = 0;
   combo = 0;
