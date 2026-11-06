@@ -3,7 +3,6 @@
 
 let ctx = null;
 let master = null;
-let voiceBuf = null;
 let noiseBuf = null;
 let muted = false;
 const VOL = 0.9;
@@ -24,13 +23,19 @@ export function initAudio() {
   if (ctx.state === 'suspended') ctx.resume();
 }
 
-export async function loadVoice(url) {
-  try {
-    const ab = await (await fetch(url)).arrayBuffer();
-    voiceBuf = await new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej));
-  } catch (e) {
-    console.warn('voice not loaded', e);
-  }
+const voices = [];
+let lastVoice = -1;
+
+/** Loads all start sounds in the background; each one is usable as soon as it is decoded. */
+export function loadVoices(urls) {
+  urls.forEach(async (url) => {
+    try {
+      const ab = await (await fetch(url)).arrayBuffer();
+      voices.push(await new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)));
+    } catch (e) {
+      console.warn('start sound not loaded', url, e);
+    }
+  });
 }
 
 export function setMuted(m) {
@@ -38,16 +43,17 @@ export function setMuted(m) {
   if (master) master.gain.setTargetAtTime(m ? 0 : VOL, ctx.currentTime, 0.02);
 }
 
-/** Plays the shutter voice, returns its length in seconds. */
+/** Plays a random start sound (never the same twice in a row), returns its length in seconds. */
 export function playVoice() {
-  if (!voiceBuf) { chu(); return 0.4; }
+  if (!voices.length) { chu(); return 0.4; }
+  let i = Math.floor(Math.random() * voices.length);
+  if (voices.length > 1 && i === lastVoice) i = (i + 1 + Math.floor(Math.random() * (voices.length - 1))) % voices.length;
+  lastVoice = i;
   const s = ctx.createBufferSource();
-  s.buffer = voiceBuf;
-  const g = ctx.createGain();
-  g.gain.value = 1.2;
-  s.connect(g).connect(master);
+  s.buffer = voices[i];
+  s.connect(master);
   s.start();
-  return voiceBuf.duration;
+  return voices[i].duration;
 }
 
 // ---------- building blocks ----------

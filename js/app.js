@@ -1,5 +1,6 @@
 import { randomLayout } from './layouts.js';
 import * as sfx from './sfx.js';
+import { START_SOUNDS } from './start-sounds.js';
 import { posePrompts, judge, FART_JUDGE, title, rank, shuffle, pick } from './words.js';
 
 // ---------- config ----------
@@ -250,11 +251,11 @@ function render(t) {
       g.clip();
       const c = captures[i];
       if (c) {
-        const b = bbox(poly);
-        g.drawImage(c.img, b.x, b.y, b.w, b.h);
+        // every snapshot covers the whole photo area; the panel clip shows only its slice
+        g.drawImage(c.img, PA.x, PA.y, PA.w, PA.h);
         drawSticker(c, poly);
       } else if (i === active && videoReady()) {
-        drawCover(g, video, video.videoWidth, video.videoHeight, bbox(poly), mirror);
+        drawCover(g, video, video.videoWidth, video.videoHeight, PA, mirror);
       } else {
         placeholder(i, poly, t);
       }
@@ -377,11 +378,12 @@ function loop(t) {
 function capturePanel(i) {
   const poly = layout.panels[i];
   const b = bbox(poly);
+  // snapshot of the full frame — together the four slices form one picture
   const c = document.createElement('canvas');
-  c.width = Math.round(b.w); c.height = Math.round(b.h);
+  c.width = PA.w; c.height = PA.h;
   const x = c.getContext('2d');
   if (videoReady()) {
-    drawCover(x, video, video.videoWidth, video.videoHeight, { x: 0, y: 0, w: c.width, h: c.height }, facing === 'user');
+    drawCover(x, video, video.videoWidth, video.videoHeight, { x: 0, y: 0, w: PA.w, h: PA.h }, facing === 'user');
   }
   // sticker at a random spot near an edge (convex mix of centre and a corner)
   const [ccx, ccy] = panelCenter(poly);
@@ -477,7 +479,7 @@ async function shoot() {
   // 1. the voice
   showBanner({ text: 'GET READY!', tag: 'いくぞ！' });
   const vd = sfx.playVoice();
-  await wait(Math.min(vd, 2.5) * 1000 + 150);
+  await wait(Math.min(vd, 3.2) * 1000 + 150);
 
   // 2. beat + countdown, first panel already live
   const totalBeats = Math.ceil(((COUNT_STEP * 3 + INTERVAL * 3) / 1000) / 0.5) + 2;
@@ -593,7 +595,7 @@ $('#btn-start').addEventListener('click', async () => {
     err.classList.remove('hidden');
     return;
   }
-  sfx.loadVoice('assets/start-voice.mp3');
+  sfx.loadVoices(START_SOUNDS.map((f) => `assets/start/${f}`));
   $('#title').classList.add('hidden');
   fit();
   newRound();

@@ -2,10 +2,11 @@
 
 A 4-panel chaos photo booth for your phone, with arcade vibes inspired by *Space Channel 5*, *Muscle March* and *Dance Dance Revolution*.
 
-**Ablauf:** Drück **SHOT!** → Ansage → Countdown **3 · 2 · 1** → alle ~1 Sekunde wird ein zufälliges Viertel mit dem Kamerabild gefüllt. Jedes Foto bekommt ein zufälliges, albernes Geräusch und eine Bewertung, das letzte ist **immer ein Furz**. 💨
+**Ablauf:** Drück **SHOT!** → zufällige Ansage → Countdown **3 · 2 · 1** → alle ~1 Sekunde wird ein zufälliges Viertel festgehalten. Die vier Viertel sind Ausschnitte aus *einem* Bild, aufgenommen zu vier verschiedenen Momenten: Am Ende ergibt sich ein Gesamtbild aus vier Schnipseln. Jedes Foto bekommt ein zufälliges, albernes Geräusch und eine Bewertung, das letzte ist **immer ein Furz**. 💨
 
 ## Was ist jedes Mal zufällig?
 
+- **Start-Ansage** aus `assets/start/` (nie zweimal dieselbe hintereinander)
 - **Layout:** Streifen, Säulen, 2×2, Boss + Sidekicks, Blitz-Schrägen, Pizza, Tornado … (gespiegelt und leicht verschoben)
 - **Reihenfolge**, in der die Viertel gefüllt werden
 - **Posen-Aufgaben** (Madlibs: `{ACTION} LIKE {CREATURE}!` oder Klassiker wie `UP! UP! CHU! CHU! CHU!`)
@@ -29,6 +30,7 @@ Tastatur am Laptop: **Leertaste/Enter** = Start / Shot / Nochmal.
 
 | Datei | Inhalt |
 |---|---|
+| `js/start-sounds.js` + `assets/start/` | Start-Ansagen: Datei in den Ordner legen und Namen in die Liste eintragen |
 | `js/words.js` | Posen, Bewertungen, Titel-Wörter, Ränge: einfach eigene Zeilen dazuschreiben |
 | `js/sfx.js` | Alle Geräusche (`FUNNY`-Liste) und der Furz |
 | `js/layouts.js` | Die Panel-Layouts |
@@ -36,5 +38,15 @@ Tastatur am Laptop: **Leertaste/Enter** = Start / Shot / Nochmal.
 
 ## Credits
 
-- Start-Ansage: [„femalemid02_so_dance03“ von synergyxxx69](https://freesound.org/people/synergyxxx69/sounds/482370/) auf Freesound.org (gekürzt, als MP3)
+Start-Ansagen von [Freesound.org](https://freesound.org) (gekürzt, lautstärke-angeglichen, als MP3):
+- synergyxxx69: „so dance“-Reihe (#482370, #482373–#482380)
+- unfa: scream let's go (#188488)
+- reitanna: let's go (#241581), oh yes (#242693)
+- audeption: let's go out and have fun (#478759)
+- legnalegna55: oh yeah (#539277)
+- lovecraft_xavier: moans (#660304), moan (#660305)
+- mt4000: ready let's go high (#664605)
+- rezidentevil: girl says uwu (#708541)
+
+Sonstiges:
 - Schriften (SIL Open Font License, über Fontsource): Dela Gothic One, DotGothic16, Press Start 2P
