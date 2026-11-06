@@ -38,6 +38,36 @@ export function loadVoices(urls) {
   });
 }
 
+let resultBuf = null;
+let resultSrc = null;
+
+export async function loadResult(url) {
+  try {
+    const ab = await (await fetch(url)).arrayBuffer();
+    resultBuf = await new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej));
+  } catch (e) {
+    console.warn('result sound not loaded', url, e);
+  }
+}
+
+/** Plays the result sound; returns false if it isn't loaded (caller falls back to the jingle). */
+export function playResult() {
+  if (!resultBuf) return false;
+  stopResult();
+  resultSrc = ctx.createBufferSource();
+  resultSrc.buffer = resultBuf;
+  resultSrc.connect(master);
+  resultSrc.start();
+  return true;
+}
+
+export function stopResult() {
+  if (resultSrc) {
+    try { resultSrc.stop(); } catch (e) { /* already stopped */ }
+    resultSrc = null;
+  }
+}
+
 export function setMuted(m) {
   muted = m;
   if (master) master.gain.setTargetAtTime(m ? 0 : VOL, ctx.currentTime, 0.02);

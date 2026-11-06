@@ -462,6 +462,7 @@ function popJudge(j, i, big = false) {
 
 // ---------- the show ----------
 function newRound() {
+  sfx.stopResult();
   layout = randomLayout();
   captures = layout.panels.map(() => null);
   roundStickers = shuffle(STICKERS);
@@ -535,7 +536,7 @@ async function shoot() {
   finalTitle = title();
   finalRank = rank(score);
   state = 'done';
-  sfx.jingle();
+  if (!sfx.playResult()) sfx.jingle();
   showBanner({ text: `RANK ${finalRank}!`, tag: finalRank.startsWith('F') ? 'くさい！' : 'おめでとう！' });
   setTimeout(hideBanner, 1800);
   $('#controls').classList.add('hidden');
@@ -608,6 +609,7 @@ $('#btn-start').addEventListener('click', async () => {
     return;
   }
   sfx.loadVoices(START_SOUNDS.map((f) => `assets/start/${f}`));
+  sfx.loadResult('assets/result.mp3');
   $('#title').classList.add('hidden');
   fit();
   newRound();

@@ -48,5 +48,7 @@ Start-Ansagen von [Freesound.org](https://freesound.org) (gekürzt, lautstärke-
 - mt4000: ready let's go high (#664605)
 - rezidentevil: girl says uwu (#708541)
 
+Ergebnis-Sound: „Nya~ ichi ni san“ (Voicy)
+
 Sonstiges:
 - Schriften (SIL Open Font License, über Fontsource): Dela Gothic One, DotGothic16, Press Start 2P
