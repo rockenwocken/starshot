@@ -1,0 +1,15 @@
+{
+  "name": "STARSHOT ★ スターショット",
+  "short_name": "STARSHOT",
+  "description": "4-panel chaos photo booth with countdowns, silly sounds and a fart finale.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#1a0b2e",
+  "theme_color": "#ff2e88",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

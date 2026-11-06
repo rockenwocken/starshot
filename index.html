@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#ff2e88">
+  <title>STARSHOT ★ スターショット</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-512.png">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sunburst" aria-hidden="true"></div>
+  <div class="arrows arrows-left" aria-hidden="true"><span>◀</span><span>▼</span><span>▲</span><span>▶</span><span>▲</span><span>◀</span><span>▶</span><span>▼</span></div>
+  <div class="arrows arrows-right" aria-hidden="true"><span>▶</span><span>▲</span><span>◀</span><span>▼</span><span>▶</span><span>▲</span><span>▼</span><span>◀</span></div>
+
+  <div id="app">
+    <header class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <span>★ STARSHOT ★ スターショット ★ INSERT COIN ★ UP! UP! CHU! CHU! CHU! ★ ムキムキ！ ★ PERFECT!! ★ 4-PANEL CHAOS BOOTH ★ すごい！ ★ HUP! HUP! ★ </span>
+        <span>★ STARSHOT ★ スターショット ★ INSERT COIN ★ UP! UP! CHU! CHU! CHU! ★ ムキムキ！ ★ PERFECT!! ★ 4-PANEL CHAOS BOOTH ★ すごい！ ★ HUP! HUP! ★ </span>
+      </div>
+    </header>
+
+    <main id="stage">
+      <div id="screen">
+        <canvas id="cv" width="1080" height="1440"></canvas>
+        <div id="fx">
+          <div id="banner" class="banner hidden"><span class="banner-text"></span><span class="banner-tag"></span></div>
+          <div id="count" class="count hidden"></div>
+          <div id="judges"></div>
+          <div id="flash"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer id="controls">
+      <button id="btn-flip" class="pill" type="button" aria-label="Switch camera">⇄<small>CAM</small></button>
+      <button id="btn-shoot" class="shoot" type="button" aria-label="Shoot"><span>SHOT!</span></button>
+      <button id="btn-mute" class="pill" type="button" aria-label="Sound on/off">♪<small>ON</small></button>
+    </footer>
+
+    <footer id="results" class="hidden">
+      <button id="btn-save" class="pill wide" type="button">⬇<small>SAVE</small></button>
+      <button id="btn-share" class="pill wide" type="button">✦<small>SHARE</small></button>
+      <button id="btn-again" class="pill wide hot" type="button">↻<small>AGAIN</small></button>
+    </footer>
+  </div>
+
+  <section id="title" class="title-screen">
+    <div class="logo">
+      <div class="logo-kana">スターショット</div>
+      <h1 class="logo-main"><span>STAR</span><span>SHOT</span></h1>
+      <div class="logo-sub">4-PANEL CHAOS PHOTO BOOTH</div>
+    </div>
+    <button id="btn-start" class="start" type="button">PRESS START</button>
+    <p class="blink">◆ INSERT COIN ◆ 1 CREDIT ◆</p>
+    <p id="title-error" class="error hidden"></p>
+    <p class="fineprint">Allow camera &amp; turn sound ON. Photos never leave your phone.</p>
+  </section>
+
+  <video id="video" playsinline muted autoplay></video>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
