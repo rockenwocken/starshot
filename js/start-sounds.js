@@ -2,6 +2,7 @@
 // Add a file there and its name here to add a new sound.
 export const START_SOUNDS = [
   "bing-bam-boom-bop-boom-bap-bam.mp3",
+  "femalemid02-so-dance03.mp3",
   "femaleyoung02-so-dance01.mp3",
   "femaleyoung02-so-dance02.mp3",
   "femaleyoung02-so-dance03.mp3",
