@@ -23,10 +23,10 @@ const CLASSICS = [
   'ALIEN ABDUCTION!', 'SHOW ME YOUR BICEPS!', 'SECRET AGENT MODE!', 'HEART HANDS ♡',
   'EVIL VILLAIN LAUGH!', 'MUSCLE MARCH! HUP! HUP!', 'FISH FACE!', 'TOO COOL FOR SCHOOL',
 ];
-// The last panel is always the fart. Set it up.
+// The last panel is the big finale.
 const LAST = [
-  'LOOK INNOCENT...', 'HOLD YOUR BREATH!', 'SQUEEEEZE!', 'DO NOT LAUGH!',
-  'SMELL ANYTHING?', 'BLAME YOUR NEIGHBOR!', 'TOTALLY CALM FACE', 'PUSH IT! PUSH IT!',
+  'LOOK INNOCENT...', 'HOLD YOUR BREATH!', 'BIG FINISH!', 'DO NOT LAUGH!',
+  'FINAL BOSS FACE!', 'LAST ONE! GO WILD!', 'TOTALLY CALM FACE', 'GRAND FINALE POSE!',
 ];
 const TAGS = ['チュッ！', 'すごい！', 'かわいい！', 'ファイト！', 'いくぞ！', 'キラキラ', 'ドキドキ', 'ムキムキ！'];
 
@@ -53,7 +53,7 @@ export function judge() {
   for (const j of JUDGES) { if ((r -= j.w) <= 0) return j; }
   return JUDGES[0];
 }
-export const FART_JUDGE = { t: 'MARVELOUS!!', c: '#ff7a00', s: 333330, sub: 'ぷぅ〜' };
+export const FART_JUDGE = { t: 'MARVELOUS!!', c: '#ff7a00', s: 333330, sub: 'フィニッシュ！' };
 
 const ADJ = ['ULTRA', 'MEGA', 'TURBO', 'HYPER', 'LEGENDARY', 'SPICY', 'KAWAII', 'FORBIDDEN', 'MUSCLE', 'GALACTIC', 'SLIGHTLY DAMP', 'DELUXE', 'MIDNIGHT', 'NEON'];
 const NOUN = ['TOFU', 'PENGUIN', 'SAMURAI', 'NOODLE', 'IDOL', 'KAIJU', 'PUDDING', 'DISCO', 'PROTEIN', 'ROBOT', 'SHRIMP', 'GRANDMA', 'BURRITO', 'DUMPLING'];

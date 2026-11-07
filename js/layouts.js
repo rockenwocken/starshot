@@ -48,6 +48,8 @@ function pizza(n, cx, cy, a0 = rnd(0, TAU)) {
   return out;
 }
 
+/** horizontal bands cut at the given y positions */
+const strips4 = (cuts) => [0, ...cuts, 1].slice(0, -1).map((y, i, a) => rect(-0.1, y, 1.1, i + 1 < a.length ? a[i + 1] : 1));
 const strips = (n) => Array.from({ length: n }, (_, i) => rect(0, i / n, 1, (i + 1) / n));
 const columns = (n) => Array.from({ length: n }, (_, i) => rect(i / n, 0, (i + 1) / n, 1));
 function grid(cols, rows) {
@@ -56,11 +58,27 @@ function grid(cols, rows) {
   return out;
 }
 
-// rough selfie face positions (camera is framed with a bit of headroom)
-const EYE_Y = 0.4, EYE_DX = 0.13, EYE_R = 0.1;
-const eyes = () => [circle(0.5 - EYE_DX, EYE_Y, EYE_R), circle(0.5 + EYE_DX, EYE_Y, EYE_R)];
-const mouth = () => ellipse(0.5, 0.66, 0.17, 0.075);
-const nose = () => ellipse(0.5, 0.53, 0.07, 0.07);
+// rough selfie face positions (measured on real selfies: phone at arm's length, laptop webcam)
+const F = { x: 0.5, eyeY: 0.405, eyeDX: 0.09, eyeR: 0.075, noseY: 0.495, mouthY: 0.585, chinY: 0.665, browY: 0.345 };
+const eyes = (r = F.eyeR) => [circle(F.x - F.eyeDX, F.eyeY, r), circle(F.x + F.eyeDX, F.eyeY, r)];
+const mouth = (s = 1) => ellipse(F.x, F.mouthY, 0.12 * s, 0.05 * s);
+const nose = (r = 0.055) => circle(F.x, F.noseY, r);
+const faceOval = () => ellipse(F.x, 0.47, 0.21, 0.26);
+
+function halfEllipse(cx, cy, rx, ry, a0, a1, steps = 36) {
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const a = a0 + ((a1 - a0) * i) / steps;
+    pts.push([cx + rx * Math.cos(a), cy + ry * K * Math.sin(a)]);
+  }
+  return pts;
+}
+// beard / jaw crescent: lower half of a big oval minus a smaller one
+function beard() {
+  const outer = halfEllipse(F.x, 0.5, 0.22, 0.26, 0, Math.PI);
+  const inner = halfEllipse(F.x, 0.5, 0.14, 0.13, Math.PI, 0);
+  return [...outer, ...inner];
+}
 
 function bubbles(count) {
   const out = [];
@@ -89,6 +107,10 @@ export const LAYOUTS = [
     },
   },
   { name: 'SPOTLIGHT', make: () => [FULL, circle(rnd(0.45, 0.55), rnd(0.42, 0.5), rnd(0.28, 0.34))] },
+  { name: 'CENSORED', face: true, make: () => [FULL, rect(-0.1, F.eyeY - 0.05, 1.1, F.eyeY + 0.05)] },
+  { name: 'MONOCLE', face: true, make: () => [FULL, circle(F.x + F.eyeDX, F.eyeY, 0.1)] },
+  { name: 'SUNGLASSES', face: true, make: () => [FULL, ellipse(F.x, F.eyeY, 0.2, 0.06)] },
+  { name: 'BIG MOUTH', face: true, make: () => [FULL, mouth(1.5)] },
   { name: 'STAR POWER', make: () => [FULL, star(0.5, 0.47, rnd(0.4, 0.46), -Math.PI / 2 + rnd(-0.25, 0.25))] },
 
   // ---------- 3 ----------
@@ -97,6 +119,10 @@ export const LAYOUTS = [
   { name: 'Y-SPLIT', make: () => pizza(3, rnd(0.45, 0.55), rnd(0.45, 0.55), -Math.PI / 2 + rnd(-0.3, 0.3)) },
   { name: 'BULLSEYE', make: () => [FULL, circle(0.5, 0.47, 0.38), circle(0.5, 0.47, 0.19)] },
   { name: 'GOOGLY EYES', face: true, make: () => [FULL, ...eyes()] },
+  { name: 'CLOWN NOSE', face: true, make: () => [FULL, nose(0.075), mouth()] },
+  { name: 'BLUSH', face: true, make: () => [FULL, circle(F.x - 0.15, 0.51, 0.07), circle(F.x + 0.15, 0.51, 0.07)] },
+  { name: 'BEARD MODE', face: true, make: () => [FULL, beard(), mouth()] },
+  { name: 'TWO FACE', face: true, make: () => [FULL, halfEllipse(F.x, 0.47, 0.21, 0.26, Math.PI / 2, Math.PI * 1.5), halfEllipse(F.x, 0.47, 0.21, 0.26, -Math.PI / 2, Math.PI / 2)] },
   { name: 'BUBBLE TEA', make: () => [FULL, ...bubbles(2)] },
 
   // ---------- 4 ----------
@@ -150,6 +176,8 @@ export const LAYOUTS = [
     },
   },
   { name: 'FACE SWAP', face: true, make: () => [FULL, ...eyes(), mouth()] },
+  { name: 'THIRD EYE', face: true, make: () => [FULL, ...eyes(), circle(F.x, F.browY - 0.04, 0.06)] },
+  { name: 'FACE ZONES', face: true, make: () => strips4([F.browY, F.eyeY + 0.06, F.chinY - 0.01]) },
   { name: 'BUBBLE BATH', make: () => [FULL, ...bubbles(3)] },
   { name: 'TARGET LOCK', make: () => [FULL, circle(0.5, 0.47, 0.44), circle(0.5, 0.47, 0.29), circle(0.5, 0.47, 0.14)] },
 
@@ -158,6 +186,8 @@ export const LAYOUTS = [
   { name: 'FIVE LAYER CAKE', make: () => strips(5) },
   { name: 'STAR BURST', make: () => [...cross(0.5, 0.47, rnd(0, 90)), star(0.5, 0.47, rnd(0.3, 0.36), -Math.PI / 2)] },
   { name: 'FULL FACE', face: true, make: () => [FULL, ...eyes(), nose(), mouth()] },
+  { name: 'FACE CARD', face: true, make: () => [FULL, faceOval(), ...eyes(), mouth()] },
+  { name: 'FACE STACK', face: true, make: () => strips4([F.browY, F.eyeY + 0.05, F.mouthY - 0.04, F.chinY + 0.02]) },
   { name: 'BUBBLE PARTY', make: () => [FULL, ...bubbles(4)] },
   {
     name: 'CROSSFIRE',
@@ -180,6 +210,7 @@ export const LAYOUTS = [
     },
   },
   { name: 'MEGA TARGET', make: () => [...columns(2), circle(0.5, 0.47, 0.44), circle(0.5, 0.47, 0.33), circle(0.5, 0.47, 0.22), circle(0.5, 0.47, 0.11)] },
+  { name: 'FACE PARTY', face: true, make: () => [FULL, faceOval(), ...eyes(), nose(), mouth()] },
   { name: 'MUGSHOT', face: true, make: () => [...columns(2), ...eyes(), nose(), mouth()] },
 ];
 

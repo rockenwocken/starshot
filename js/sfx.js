@@ -23,19 +23,43 @@ export function initAudio() {
   if (ctx.state === 'suspended') ctx.resume();
 }
 
-const voices = [];
-let lastVoice = -1;
+// A bank of decoded sounds; play() picks one at random, never the same twice in a row.
+function makeBank(label) {
+  const bufs = [];
+  let last = -1;
+  return {
+    load(urls) {
+      urls.forEach(async (url) => {
+        try {
+          const ab = await (await fetch(url)).arrayBuffer();
+          bufs.push(await new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)));
+        } catch (e) {
+          console.warn(label, 'not loaded', url, e);
+        }
+      });
+    },
+    /** returns the length in seconds, or 0 if nothing is loaded yet */
+    play() {
+      if (!bufs.length) return 0;
+      let i = Math.floor(Math.random() * bufs.length);
+      if (bufs.length > 1 && i === last) i = (i + 1 + Math.floor(Math.random() * (bufs.length - 1))) % bufs.length;
+      last = i;
+      const src = ctx.createBufferSource();
+      src.buffer = bufs[i];
+      src.connect(master);
+      src.start();
+      return bufs[i].duration;
+    },
+  };
+}
+const startBank = makeBank('start sound');
+const endBank = makeBank('end sound');
+export const loadVoices = (urls) => startBank.load(urls);
+export const loadEnds = (urls) => endBank.load(urls);
 
-/** Loads all start sounds in the background; each one is usable as soon as it is decoded. */
-export function loadVoices(urls) {
-  urls.forEach(async (url) => {
-    try {
-      const ab = await (await fetch(url)).arrayBuffer();
-      voices.push(await new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)));
-    } catch (e) {
-      console.warn('start sound not loaded', url, e);
-    }
-  });
+/** Plays a random end sound for the last photo; falls back to the synth fart. Returns seconds. */
+export function playEnd() {
+  return endBank.play() || fart();
 }
 
 let resultBuf = null;
@@ -73,17 +97,11 @@ export function setMuted(m) {
   if (master) master.gain.setTargetAtTime(m ? 0 : VOL, ctx.currentTime, 0.02);
 }
 
-/** Plays a random start sound (never the same twice in a row), returns its length in seconds. */
+/** Plays a random start sound, returns its length in seconds. */
 export function playVoice() {
-  if (!voices.length) { chu(); return 0.4; }
-  let i = Math.floor(Math.random() * voices.length);
-  if (voices.length > 1 && i === lastVoice) i = (i + 1 + Math.floor(Math.random() * (voices.length - 1))) % voices.length;
-  lastVoice = i;
-  const s = ctx.createBufferSource();
-  s.buffer = voices[i];
-  s.connect(master);
-  s.start();
-  return voices[i].duration;
+  const d = startBank.play();
+  if (!d) { chu(); return 0.4; }
+  return d;
 }
 
 // ---------- building blocks ----------

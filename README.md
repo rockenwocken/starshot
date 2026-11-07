@@ -2,12 +2,12 @@
 
 A 2-to-6-panel chaos photo booth for your phone, with arcade vibes inspired by *Space Channel 5*, *Muscle March* and *Dance Dance Revolution*.
 
-**Ablauf:** Drück **SHOT!** → zufällige Ansage → Countdown **3 · 2 · 1** → alle ~1 Sekunde wird ein zufälliger Teil festgehalten. Alle Teile sind Ausschnitte aus *einem* Bild, aufgenommen zu verschiedenen Momenten: Am Ende ergibt sich ein Gesamtbild aus lauter Schnipseln. Jedes Foto bekommt ein zufälliges, albernes Geräusch und eine Bewertung, das letzte ist **immer ein Furz**. 💨
+**Ablauf:** Drück **SHOT!** → zufällige Ansage → Countdown **3 · 2 · 1** → alle ~1 Sekunde wird ein zufälliger Teil festgehalten. Alle Teile sind Ausschnitte aus *einem* Bild, aufgenommen zu verschiedenen Momenten: Am Ende ergibt sich ein Gesamtbild aus lauter Schnipseln. Jedes Foto bekommt ein zufälliges, albernes Geräusch und eine Bewertung, beim letzten kommt ein zufälliger **End-Sound** (Jodler, Sprüche, Glitzer …), danach die Ergebnis-Musik.
 
 ## Was ist jedes Mal zufällig?
 
-- **Start-Ansage** aus `assets/start/` (nie zweimal dieselbe hintereinander)
-- **Layout:** 2 bis 6 Teile (jede Anzahl gleich oft), über 30 Formen: Streifen, Raster, Schrägen, Pizza, Kreise, Bullseye, Sterne, Bubbles und Gesichts-Layouts (Augen, Nase, Mund aus verschiedenen Momenten). Tippen aufs Bild vor dem Auslösen würfelt ein neues Layout.
+- **Start-Ansage** aus `assets/start/` und **End-Sound** aus `assets/end/` (nie zweimal derselbe hintereinander; alle Dateien auf ca. −16 LUFS angeglichen)
+- **Layout:** 2 bis 6 Teile (jede Anzahl gleich oft), über 30 Formen: Streifen, Raster, Schrägen, Pizza, Kreise, Bullseye, Sterne, Bubbles und Gesichts-Layouts (Augen, Nase, Mund, Bart, Gesichtshälften … aus verschiedenen Momenten). Tippen aufs Bild vor dem Auslösen würfelt ein neues Layout.
 - **Reihenfolge**, in der die Viertel gefüllt werden
 - **Posen-Aufgaben** (Madlibs: `{ACTION} LIKE {CREATURE}!` oder Klassiker wie `UP! UP! CHU! CHU! CHU!`)
 - **Geräusche** (Boing, Quietsch-Ente, Laser, Hupe, Kuhglocke, Kazoo, …): alles live per Web Audio synthetisiert, jeder Furz klingt anders
@@ -31,6 +31,7 @@ Tastatur am Laptop: **Leertaste/Enter** = Start / Shot / Nochmal.
 | Datei | Inhalt |
 |---|---|
 | `js/start-sounds.js` + `assets/start/` | Start-Ansagen: Datei in den Ordner legen und Namen in die Liste eintragen |
+| `js/end-sounds.js` + `assets/end/` | End-Sounds fürs letzte Foto, genauso |
 | `js/words.js` | Posen, Bewertungen, Titel-Wörter, Ränge: einfach eigene Zeilen dazuschreiben |
 | `js/sfx.js` | Alle Geräusche (`FUNNY`-Liste) und der Furz |
 | `js/layouts.js` | Die Panel-Layouts |
@@ -49,6 +50,8 @@ Start-Ansagen von [Freesound.org](https://freesound.org) (gekürzt, lautstärke-
 - rezidentevil: girl says uwu (#708541)
 
 Ergebnis-Sound: „Nya~ ichi ni san“ (Voicy)
+
+- bing bam boom (Start) sowie die End-Sounds in `assets/end/`: aus Sound-Sammlungen im Netz, nur für private Nutzung
 
 Sonstiges:
 - Schriften (SIL Open Font License, über Fontsource): Dela Gothic One, DotGothic16, Press Start 2P

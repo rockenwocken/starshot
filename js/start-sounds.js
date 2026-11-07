@@ -1,7 +1,7 @@
 // Files in assets/start/ — one is picked at random every time SHOT! is pressed.
-// Add a file there and its name here to add a new start sound.
+// Add a file there and its name here to add a new sound.
 export const START_SOUNDS = [
-  "femalemid02-so-dance03.mp3",
+  "bing-bam-boom-bop-boom-bap-bam.mp3",
   "femaleyoung02-so-dance01.mp3",
   "femaleyoung02-so-dance02.mp3",
   "femaleyoung02-so-dance03.mp3",

@@ -1,6 +1,7 @@
 import { randomLayout } from './layouts.js';
 import * as sfx from './sfx.js';
 import { START_SOUNDS } from './start-sounds.js';
+import { END_SOUNDS } from './end-sounds.js';
 import { posePrompts, judge, FART_JUDGE, title, rank, shuffle, pick } from './words.js';
 
 // ---------- config ----------
@@ -484,6 +485,7 @@ function popJudge(j, i, big = false) {
 // ---------- the show ----------
 function setLayout() {
   layout = randomLayout(PA.w / PA.h);
+  window.__layoutName = layout.name; // handy for debugging/tests
   info = analyse(layout.panels);
   captures = layout.panels.map(() => null);
   roundStickers = shuffle(STICKERS);
@@ -536,13 +538,14 @@ async function shoot() {
   countEl.classList.add('hidden');
 
   // 3. the photos
+  let endDur = 1;
   for (let k = 0; k < n; k++) {
     const i = order[k];
     capturePanel(i);
     const last = k === n - 1;
     combo++;
     if (last) {
-      sfx.fart();
+      endDur = sfx.playEnd();
       flash(true);
       score += pts(FART_JUDGE.s);
       popJudge(FART_JUDGE, i, true);
@@ -560,8 +563,8 @@ async function shoot() {
     }
   }
 
-  // 4. results
-  await wait(1300);
+  // 4. results — let the end sound finish first
+  await wait(Math.max(1300, Math.min(endDur, 6.5) * 1000 + 250));
   finalTitle = title();
   finalRank = rank(score);
   state = 'done';
@@ -638,6 +641,7 @@ $('#btn-start').addEventListener('click', async () => {
     return;
   }
   sfx.loadVoices(START_SOUNDS.map((f) => `assets/start/${f}`));
+  sfx.loadEnds(END_SOUNDS.map((f) => `assets/end/${f}`));
   sfx.loadResult('assets/result.mp3');
   $('#title').classList.add('hidden');
   fit();
