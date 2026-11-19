@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tisch-Taiko</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+/* Layout: eine schmale Spalte wie ein Spielautomat, Nacht-Festival: Indigo, Lampionpapier, Rot (Don) und Blau (Ka) */
+:root{
+  --ink:#15172f; --panel:#20244a; --panel-2:#2a2f5c; --line:#3a4074;
+  --paper:#f3e6cc; --muted:#a3a8cf;
+  --don:#e5482f; --ka:#3aa6d0; --gold:#f2b33d; --ok:#7fd36b;
+  --display:"Dela Gothic One","Arial Black",Impact,sans-serif;
+  --body:"Zen Maru Gothic",ui-rounded,"SF Pro Rounded",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--ink);color:var(--paper);font-family:var(--body);font-size:16px;line-height:1.5}
+[hidden]{display:none!important}
+main{max-width:560px;margin:0 auto;padding-block:max(20px,env(safe-area-inset-top)) max(32px,env(safe-area-inset-bottom));
+  padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));display:flex;flex-direction:column;gap:20px}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;letter-spacing:.02em;text-wrap:balance}
+h1{font-size:clamp(2.4rem,11vw,3.6rem);line-height:1}
+h2{font-size:1.6rem;line-height:1.15}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+.eyebrow{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:14px 20px;font-weight:700;font-size:1.05rem;color:var(--ink);background:var(--paper);transition:transform .08s}
+button:active{transform:scale(.97)}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+button.ghost{background:transparent;color:var(--paper);border:2px solid var(--line)}
+button.link{background:none;color:var(--muted);padding:6px 0;text-decoration:underline;font-weight:500;font-size:.95rem}
+button.big{width:100%;padding:18px;font-size:1.15rem}
+.panel{background:var(--panel);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px}
+
+/* Start */
+.hero{display:flex;gap:18px;align-items:center}
+.drum{flex:none;width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--paper) 0 55%,#c9a46a 56% 62%,#7b3b22 63% 100%);position:relative;box-shadow:0 6px 0 #0b0c1d}
+.drum::after{content:"";position:absolute;inset:34%;border-radius:50%;background:var(--don);opacity:.85}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{text-align:left;background:var(--panel);color:var(--paper);border:2px solid transparent;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px;font-weight:500}
+.mode b{font-family:var(--display);font-weight:400;font-size:1.05rem}
+.mode[aria-pressed="true"]{border-color:var(--gold);background:var(--panel-2)}
+.tips{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
+.err{background:#4a1d22;color:#ffd9d2;border-radius:12px;padding:12px 14px}
+
+/* Meter */
+.meter{position:relative;height:14px;border-radius:7px;background:var(--ink);overflow:hidden}
+.meter .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--muted);transition:width .06s linear}
+.meter .thr{position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--gold)}
+.meter.hit .fill{background:var(--gold)}
+.slider{width:100%;accent-color:var(--gold)}
+
+/* Calibration */
+.prompt{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:26px 16px;border-radius:20px;background:var(--panel)}
+.prompt .big{font-family:var(--display);font-size:clamp(2.2rem,12vw,3.4rem);line-height:1}
+.prompt.a .big{color:var(--don)} .prompt.b .big{color:var(--ka)}
+.dots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.dots i{width:16px;height:16px;border-radius:50%;background:var(--line);display:block;transition:background .1s,transform .1s}
+.dots i.on{background:var(--gold);transform:scale(1.15)}
+.pulse{width:110px;height:110px;border-radius:50%;background:var(--panel-2);display:grid;place-items:center;font-family:var(--display);font-size:2.4rem;transition:transform .08s,background .08s}
+.pulse.beat{transform:scale(1.12);background:var(--gold);color:var(--ink)}
+.score-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.score-line strong{font-family:var(--display);font-weight:400;font-size:2.4rem;font-variant-numeric:tabular-nums}
+.verdict{border-radius:12px;padding:12px 14px;background:var(--panel-2)}
+
+/* Test */
+.result-big{font-family:var(--display);font-size:clamp(2.6rem,14vw,4rem);line-height:1;min-height:1em}
+.result-big.a{color:var(--don)} .result-big.b{color:var(--ka)}
+.confbar{height:8px;border-radius:4px;background:var(--ink);overflow:hidden;width:100%}
+.confbar span{display:block;height:100%;width:0;background:var(--gold)}
+.mark{font-weight:700}
+.mark.good{color:var(--ok)} .mark.bad{color:#ff8a78}
+
+/* Songs */
+.song{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;background:var(--panel);color:var(--paper);padding:16px 18px;border-radius:16px;font-weight:500;width:100%}
+.song b{font-family:var(--display);font-weight:400;font-size:1.25rem;display:block}
+.lvl{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:2px solid currentColor;flex:none}
+.lvl.l1{color:var(--ok)} .lvl.l2{color:var(--gold)} .lvl.l3{color:var(--don)}
+.legend{display:flex;gap:16px;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{width:18px;height:18px;border-radius:50%;border:3px solid var(--paper);display:block}
+.offset{display:flex;align-items:center;gap:10px}
+.offset button{padding:8px 14px}
+.offset output{min-width:5.5em;text-align:center;font-variant-numeric:tabular-nums;font-weight:700}
+
+/* Game */
+#game{max-width:none;padding:0;gap:0;min-height:100vh;min-height:100dvh}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left))}
+.hud .num{font-family:var(--display);font-size:1.6rem;font-variant-numeric:tabular-nums;line-height:1}
+.hud .lab{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hud button{padding:8px 14px;font-size:.9rem}
+.stage{flex:1;display:flex;align-items:center;min-height:260px}
+#lane{width:100%;height:min(46vh,340px);display:block}
+.gamefoot{padding:10px 16px max(16px,env(safe-area-inset-bottom));text-align:center}
+
+/* Results */
+.tally{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.tally div{background:var(--panel-2);border-radius:12px;padding:10px 4px}
+.tally strong{display:block;font-family:var(--display);font-weight:400;font-size:1.5rem;font-variant-numeric:tabular-nums}
+.tally span{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+@media (max-width:380px){.modes{grid-template-columns:1fr}.tally{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- START -->
+<main id="start">
+  <div class="hero">
+    <div class="drum" aria-hidden="true"></div>
+    <div class="stack" style="gap:6px">
+      <span class="eyebrow">Trommeln ohne Trommel</span>
+      <h1>Tisch-Taiko</h1>
+    </div>
+  </div>
+  <p>Klopf auf den Tisch, das Handy hört zu. Erst lernt es, wie deine zwei Schläge klingen, dann trommelst du im Takt.</p>
+
+  <div class="stack">
+    <span class="eyebrow">Wie willst du schlagen?</span>
+    <div class="modes">
+      <button class="mode" data-mode="lr" aria-pressed="true"><b>Links / Rechts</b><span class="small muted">Gleicher Schlag, zwei Stellen auf dem Tisch</span></button>
+      <button class="mode" data-mode="tone" aria-pressed="false"><b>Dumpf / Hell</b><span class="small muted">Flache Hand gegen Fingerknöchel</span></button>
+    </div>
+  </div>
+
+  <ul class="tips small">
+    <li>Handy flach auf den Tisch legen, Mikrofon frei.</li>
+    <li>Bei <b>Links / Rechts</b> das Handy nicht genau in die Mitte legen, sondern näher an eine Seite. Dann klingen die Seiten unterschiedlich laut.</li>
+    <li>Am besten mit Kopfhörern spielen, sonst hört das Handy die eigene Musik.</li>
+  </ul>
+
+  <div id="startErr" class="err" hidden></div>
+  <div class="stack">
+    <button id="btnMic" class="big">Mikrofon einschalten</button>
+    <p id="savedNote" class="small muted" hidden></p>
+  </div>
+</main>
+
+<!-- KALIBRIERUNG -->
+<main id="calib" hidden>
+  <div class="row" style="justify-content:space-between">
+    <span class="eyebrow" id="calStep">Schritt 1 von 3</span>
+    <button class="link" id="calBack">Zurück</button>
+  </div>
+
+  <div id="calPrompt" class="prompt a">
+    <span class="big" id="calBig">Links</span>
+    <p id="calHint">Klopf 8-mal links neben das Handy</p>
+    <div class="dots" id="calDots"></div>
+  </div>
+
+  <div id="calEval" class="stack" hidden>
+    <div class="panel">
+      <div class="score-line"><span>Erkennungsquote im Selbsttest</span><strong id="calAcc">–</strong></div>
+      <p class="verdict small" id="calVerdict"></p>
+    </div>
+    <button id="calToTempo" class="big">Weiter: Takt messen</button>
+    <button id="calRedo" class="ghost">Nochmal aufnehmen</button>
+  </div>
+
+  <div id="calTempo" class="stack" hidden>
+    <div class="prompt">
+      <div class="pulse" id="pulse">·</div>
+      <p id="tempoHint">Hör auf die Schläge. Nach dem Vorzählen klopfst du 8-mal mit, egal welche Art.</p>
+    </div>
+    <button id="tempoGo" class="big">Start</button>
+    <button id="tempoSkip" class="link">Überspringen</button>
+  </div>
+
+  <div id="calDone" class="stack" hidden>
+    <div class="panel">
+      <div class="score-line"><span>Verzögerung gemessen</span><strong id="calOffset">–</strong></div>
+      <p class="small muted">Diese Zeit zieht das Spiel von jedem Schlag ab, damit sich das Timing fair anfühlt.</p>
+    </div>
+    <button id="doneTest" class="big">Erkennung testen</button>
+    <button id="donePlay" class="ghost">Direkt spielen</button>
+  </div>
+
+  <div class="panel" id="meterPanel">
+    <div class="row" style="justify-content:space-between"><span class="small">Mikrofon-Pegel</span><span class="small muted">Gelbe Linie = Auslöseschwelle</span></div>
+    <div class="meter" id="meter"><div class="fill"></div><div class="thr"></div></div>
+    <label class="small muted" for="sens">Empfindlichkeit</label>
+    <input class="slider" type="range" id="sens" min="0" max="100" value="55">
+  </div>
+</main>
+
+<!-- TEST -->
+<main id="test" hidden>
+  <div class="row" style="justify-content:space-between">
+    <span class="eyebrow">Erkennung testen</span>
+    <button class="link" id="testBack">Zur Liedauswahl</button>
+  </div>
+  <div class="prompt">
+    <span class="small muted">Klopf jetzt</span>
+    <span class="big" id="testTarget">Links</span>
+  </div>
+  <div class="panel" style="align-items:center;text-align:center">
+    <span class="small muted">Erkannt</span>
+    <div class="result-big" id="testRes">&nbsp;</div>
+    <div class="confbar"><span id="testConf"></span></div>
+    <span class="mark" id="testMark">&nbsp;</span>
+  </div>
+  <div class="panel">
+    <div class="score-line"><span>Trefferquote</span><strong id="testAcc">–</strong></div>
+    <p class="small muted" id="testCount">Noch keine Schläge</p>
+  </div>
+  <div class="row">
+    <button id="testRecal" class="ghost">Neu kalibrieren</button>
+    <button id="testPlay">Spielen</button>
+  </div>
+</main>
+
+<!-- LIEDAUSWAHL -->
+<main id="songs" hidden>
+  <div class="row" style="justify-content:space-between">
+    <h2>Lied wählen</h2>
+    <button class="link" id="songsTest">Erkennung testen</button>
+  </div>
+  <div class="legend small" id="legend"></div>
+  <div class="stack" id="songList"></div>
+  <div class="panel">
+    <span class="small">Timing-Ausgleich</span>
+    <div class="offset">
+      <button class="ghost" id="offMinus" aria-label="10 Millisekunden weniger">−10</button>
+      <output id="offVal">0 ms</output>
+      <button class="ghost" id="offPlus" aria-label="10 Millisekunden mehr">+10</button>
+    </div>
+    <p class="small muted">Wenn deine Schläge oft als „zu spät“ zählen, Wert erhöhen.</p>
+  </div>
+  <button class="link" id="songsRecal">Neu kalibrieren</button>
+</main>
+
+<!-- SPIEL -->
+<main id="game" hidden>
+  <div class="hud">
+    <div><div class="num" id="hudScore">0</div><div class="lab">Punkte</div></div>
+    <div style="text-align:center"><div class="num" id="hudCombo">0</div><div class="lab">Combo</div></div>
+    <button class="ghost" id="hudQuit">Beenden</button>
+  </div>
+  <div class="stage"><canvas id="lane"></canvas></div>
+  <div class="gamefoot small muted" id="gameFoot"></div>
+</main>
+
+<!-- ERGEBNIS -->
+<main id="result" hidden>
+  <span class="eyebrow" id="resSong">Ergebnis</span>
+  <div class="score-line"><h2 id="resTitle">Geschafft</h2><strong id="resAcc">–</strong></div>
+  <div class="tally">
+    <div><strong id="rGut">0</strong><span>Gut</span></div>
+    <div><strong id="rOk">0</strong><span>OK</span></div>
+    <div><strong id="rWrong">0</strong><span>Falsch</span></div>
+    <div><strong id="rMiss">0</strong><span>Verpasst</span></div>
+  </div>
+  <div class="panel">
+    <div class="score-line"><span>Punkte</span><strong id="rScore" style="font-size:1.8rem">0</strong></div>
+    <p class="small muted" id="rInfo"></p>
+  </div>
+  <div id="rOffsetBox" class="panel" hidden>
+    <p class="small" id="rOffsetText"></p>
+    <button id="rOffsetApply">Ausgleich übernehmen</button>
+  </div>
+  <button id="rAgain" class="big">Nochmal</button>
+  <button id="rSongs" class="ghost">Anderes Lied</button>
+</main>
+
+<script id="dsp">
+/* Reine Signalverarbeitung: Merkmale + Klassifikator (ohne DOM) */
+const DSP = (() => {
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang), h = len >> 1;
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let k = 0; k < h; k++) {
+          const a = i + k, b = a + h;
+          const tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+          const ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr;
+        }
+      }
+    }
+  }
+
+  const NB = 20;
+  // s: Samples rund um den Schlag, pre: Index des Schlagbeginns
+  function features(s, sr, pre) {
+    const N = 1024, st = Math.max(0, pre - 16);
+    const re = new Float64Array(N), im = new Float64Array(N);
+    for (let i = 0; i < N; i++) re[i] = (s[st + i] || 0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1)));
+    fft(re, im);
+    const P = new Float64Array(N / 2);
+    for (let k = 0; k < N / 2; k++) P[k] = re[k] * re[k] + im[k] * im[k];
+    const fMin = 150, fMax = Math.min(9000, sr * 0.45);
+    let tot = 0, cen = 0;
+    for (let k = 1; k < N / 2; k++) { const f = k * sr / N; if (f >= fMin && f <= fMax) { tot += P[k]; cen += f * P[k]; } }
+    const bands = [];
+    for (let b = 0; b < NB; b++) {
+      const lo = fMin * Math.pow(fMax / fMin, b / NB), hi = fMin * Math.pow(fMax / fMin, (b + 1) / NB);
+      const k0 = Math.floor(lo * N / sr), k1 = Math.max(k0 + 1, Math.floor(hi * N / sr));
+      let e = 0; for (let k = k0; k < k1 && k < N / 2; k++) e += P[k];
+      bands.push(10 * Math.log10(e / (k1 - k0) + 1e-14));
+    }
+    const m = bands.reduce((a, v) => a + v, 0) / NB;
+    const rms = (a, b) => { let e = 0, c = 0; for (let i = a; i < b && i < s.length; i++) { e += s[i] * s[i]; c++; } return Math.sqrt(e / Math.max(1, c)); };
+    let pk = 0; const pe = Math.min(s.length, pre + Math.round(sr * 0.015));
+    for (let i = pre; i < pe; i++) pk = Math.max(pk, Math.abs(s[i]));
+    const early = rms(pre, pre + Math.round(sr * 0.012)), late = rms(pre + Math.round(sr * 0.02), s.length);
+    const db = v => 20 * Math.log10(v + 1e-9);
+    return [db(pk), db(late) - db(early), Math.log2(cen / (tot || 1) + 1), ...bands.map(v => v - m)];
+  }
+
+  function solve(A, bv) {
+    const n = bv.length, M = A.map((r, i) => [...r, bv[i]]);
+    for (let c = 0; c < n; c++) {
+      let p = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      const tmp = M[c]; M[c] = M[p]; M[p] = tmp;
+      const d = M[c][c] || 1e-12;
+      for (let r = 0; r < n; r++) {
+        if (r === c) continue;
+        const f = M[r][c] / d; if (!f) continue;
+        for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
+      }
+    }
+    return M.map((r, i) => r[n] / (r[i] || 1e-12));
+  }
+  const avg = X => X[0].map((_, j) => X.reduce((a, x) => a + x[j], 0) / X.length);
+  const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
+
+  // Regularisierte lineare Diskriminanzanalyse: Klasse 0 = A, Klasse 1 = B
+  function train(A, B, alpha = 0.35) {
+    const d = A[0].length, n = A.length + B.length;
+    const muA = avg(A), muB = avg(B);
+    const sd = new Array(d).fill(0);
+    for (const x of A) for (let j = 0; j < d; j++) sd[j] += (x[j] - muA[j]) ** 2;
+    for (const x of B) for (let j = 0; j < d; j++) sd[j] += (x[j] - muB[j]) ** 2;
+    for (let j = 0; j < d; j++) sd[j] = Math.sqrt(sd[j] / Math.max(1, n - 2)) + 1e-3;
+    const mid = muA.map((v, j) => (v + muB[j]) / 2);
+    const z = x => x.map((v, j) => (v - mid[j]) / sd[j]);
+    const ZA = A.map(z), ZB = B.map(z), za = avg(ZA), zb = avg(ZB);
+    const S = Array.from({ length: d }, () => new Array(d).fill(0));
+    const acc = (X, mu) => { for (const x of X) { const df = x.map((v, j) => v - mu[j]); for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) S[i][j] += df[i] * df[j]; } };
+    acc(ZA, za); acc(ZB, zb);
+    for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) S[i][j] = (1 - alpha) * S[i][j] / Math.max(1, n - 2) + (i === j ? alpha : 0);
+    const w = solve(S, zb.map((v, j) => v - za[j]));
+    const pa = ZA.map(x => dot(w, x)), pb = ZB.map(x => dot(w, x));
+    const ma = pa.reduce((a, v) => a + v, 0) / pa.length, mb = pb.reduce((a, v) => a + v, 0) / pb.length;
+    return { mid, sd, w, thr: (ma + mb) / 2, half: Math.abs(mb - ma) / 2 || 1 };
+  }
+  function classify(m, x) {
+    const p = dot(m.w, x.map((v, j) => (v - m.mid[j]) / m.sd[j]));
+    const s = (p - m.thr) / m.half;
+    return { cls: s > 0 ? 1 : 0, conf: Math.max(0, Math.min(1, Math.abs(s))) };
+  }
+  // Leave-one-out: wie gut würde ein neuer Schlag erkannt?
+  function loo(A, B) {
+    let ok = 0, n = 0;
+    for (let i = 0; i < A.length; i++) { const m = train(A.filter((_, k) => k !== i), B); ok += classify(m, A[i]).cls === 0; n++; }
+    for (let i = 0; i < B.length; i++) { const m = train(A, B.filter((_, k) => k !== i)); ok += classify(m, B[i]).cls === 1; n++; }
+    return ok / n;
+  }
+  return { features, train, classify, loo };
+})();
+</script>
+
+<script>
+/* ---------- Audio-Worklet: Schlag-Erkennung direkt im Audiothread ---------- */
+const WORKLET = `
+class Onset extends AudioWorkletProcessor {
+  constructor(){
+    super();
+    this.PRE = 256; this.LEN = 2048;
+    this.pre = new Float32Array(this.PRE); this.preI = 0;
+    this.cap = null; this.capN = 0; this.capFrame = 0;
+    const rc = 1/(2*Math.PI*1500), dt = 1/sampleRate; this.a = rc/(rc+dt);
+    this.hp = 0; this.px = 0;
+    this.floor = 0.002; this.last = -1e12; this.minThr = 0.02;
+    this.refr = Math.round(sampleRate*0.11);
+    this.lvl = 0; this.lvlN = 0;
+    this.port.onmessage = e => { if (e.data.minThr != null) this.minThr = e.data.minThr; };
+  }
+  process(inputs){
+    const ch = inputs[0] && inputs[0][0];
+    if (!ch) return true;
+    for (let i = 0; i < ch.length; i++){
+      const x = ch[i];
+      const y = this.a*(this.hp + x - this.px); this.hp = y; this.px = x;
+      const ay = Math.abs(y), frame = currentFrame + i;
+      if (this.cap){
+        this.cap[this.capN++] = x;
+        if (this.capN >= this.LEN){
+          this.port.postMessage({type:'hit', frame:this.capFrame, samples:this.cap, pre:this.PRE}, [this.cap.buffer]);
+          this.cap = null;
+        }
+      } else if (ay > Math.max(this.minThr, this.floor*7) && frame - this.last > this.refr){
+        this.last = frame; this.capFrame = frame;
+        this.cap = new Float32Array(this.LEN);
+        for (let k = 0; k < this.PRE; k++) this.cap[k] = this.pre[(this.preI + k) % this.PRE];
+        this.capN = this.PRE; this.cap[this.capN++] = x;
+      }
+      this.pre[this.preI] = x; this.preI = (this.preI + 1) % this.PRE;
+      if (frame - this.last > this.refr*2) this.floor += (ay - this.floor)*0.00005;
+      if (ay > this.lvl) this.lvl = ay;
+    }
+    this.lvlN += ch.length;
+    if (this.lvlN >= 1024){ this.port.postMessage({type:'lvl', v:this.lvl, floor:this.floor}); this.lvl = 0; this.lvlN = 0; }
+    return true;
+  }
+}
+registerProcessor('onset', Onset);
+`;
+
+/* ---------- Zustand ---------- */
+const KEY = 'tischtaiko.v1';
+const $ = id => document.getElementById(id);
+const S = { mode: 'lr', ctx: null, node: null, out: null, sr: 48000, onHit: null, hitSounds: true, store: {} };
+try { S.store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { S.store = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S.store)); } catch (e) {} };
+const prof = () => (S.store[S.mode] ||= { model: null, offset: 0, sens: 55, best: {} });
+
+const LABELS = {
+  lr:   { A: 'Links', B: 'Rechts', aHint: 'Klopf 8-mal links neben das Handy', bHint: 'Klopf 8-mal rechts neben das Handy', don: 'links klopfen', ka: 'rechts klopfen' },
+  tone: { A: 'Dumpf', B: 'Hell', aHint: 'Klopf 8-mal mit der flachen Hand', bHint: 'Klopf 8-mal mit den Fingerknöcheln', don: 'flache Hand', ka: 'Fingerknöchel' }
+};
+const L = () => LABELS[S.mode];
+
+function show(id) {
+  for (const m of document.querySelectorAll('body > main')) m.hidden = m.id !== id;
+  window.scrollTo(0, 0);
+  if (id !== 'game') stopGameLoop();
+}
+
+/* ---------- Audio ---------- */
+const sensToThr = v => 0.25 * Math.pow(10, -2.2 * (v / 100)); // 0 → 0.25, 100 → ~0.0016
+function setSens(v) { prof().sens = +v; save(); if (S.node) S.node.port.postMessage({ minThr: sensToThr(v) }); drawThr(); }
+
+async function initAudio() {
+  if (S.ctx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC({ latencyHint: 'interactive' });
+  S.ctx = ctx;
+  ctx.resume();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nomedia');
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+  const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }));
+  await ctx.audioWorklet.addModule(url);
+  const src = ctx.createMediaStreamSource(stream);
+  const node = new AudioWorkletNode(ctx, 'onset', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
+  const mute = ctx.createGain(); mute.gain.value = 0;
+  src.connect(node); node.connect(mute); mute.connect(ctx.destination);
+  S.out = ctx.createGain(); S.out.gain.value = 0.8; S.out.connect(ctx.destination);
+  S.node = node; S.sr = ctx.sampleRate;
+  node.port.onmessage = e => {
+    const d = e.data;
+    if (d.type === 'lvl') drawMeter(d.v);
+    else if (d.type === 'hit') {
+      flashMeter();
+      const f = DSP.features(d.samples, S.sr, d.pre);
+      if (S.onHit) S.onHit({ t: d.frame / S.sr, f });
+    }
+  };
+  setSens(prof().sens);
+  await ctx.resume();
+}
+
+// Weiche Töne ohne harten Anschlag, damit sie die Schlag-Erkennung nicht auslösen
+function tone(freq, t, dur, gain = 0.15, type = 'sine', attack = 0.012, freqEnd) {
+  const c = S.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(S.out); o.start(t); o.stop(t + dur + 0.05);
+}
+function pad(midis, t, dur) {
+  const c = S.ctx, lp = c.createBiquadFilter(), g = c.createGain();
+  lp.type = 'lowpass'; lp.frequency.value = 1200;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.05, t + 0.35);
+  g.gain.setValueAtTime(0.05, t + dur - 0.3);
+  g.gain.linearRampToValueAtTime(0.0001, t + dur);
+  lp.connect(g); g.connect(S.out);
+  for (const m of midis) {
+    const o = c.createOscillator(); o.type = 'triangle';
+    o.frequency.value = 440 * Math.pow(2, (m - 69) / 12);
+    o.connect(lp); o.start(t); o.stop(t + dur + 0.05);
+  }
+}
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+function hitSound(cls) {
+  if (!S.hitSounds) return;
+  const t = S.ctx.currentTime;
+  if (cls === 0) tone(110, t, 0.18, 0.3, 'sine', 0.008, 60);
+  else tone(520, t, 0.09, 0.12, 'sine', 0.008, 480);
+}
+
+/* ---------- Pegelanzeige ---------- */
+const pos = v => Math.max(0, Math.min(1, (20 * Math.log10(v + 1e-9) + 60) / 60));
+function drawMeter(v) { const f = document.querySelector('#meter .fill'); if (f) f.style.width = (pos(v) * 100) + '%'; }
+function drawThr() { const t = document.querySelector('#meter .thr'); if (t) t.style.left = (pos(sensToThr(prof().sens)) * 100) + '%'; }
+let flashT;
+function flashMeter() { const m = $('meter'); m.classList.add('hit'); clearTimeout(flashT); flashT = setTimeout(() => m.classList.remove('hit'), 120); }
+
+/* ---------- Start ---------- */
+for (const b of document.querySelectorAll('.mode')) {
+  b.addEventListener('click', () => {
+    S.mode = b.dataset.mode;
+    for (const o of document.querySelectorAll('.mode')) o.setAttribute('aria-pressed', o === b ? 'true' : 'false');
+    updateSavedNote();
+  });
+}
+function updateSavedNote() {
+  const has = !!(S.store[S.mode] && S.store[S.mode].model);
+  $('savedNote').hidden = !has;
+  $('savedNote').textContent = has ? 'Für diesen Modus gibt es schon eine Kalibrierung. Du landest direkt bei der Liedauswahl.' : '';
+  $('btnMic').textContent = has ? 'Mikrofon einschalten und spielen' : 'Mikrofon einschalten';
+}
+updateSavedNote();
+
+$('btnMic').addEventListener('click', async () => {
+  $('startErr').hidden = true;
+  try {
+    await initAudio();
+    $('sens').value = prof().sens; drawThr();
+    if (prof().model) openSongs(); else startCalib();
+  } catch (e) {
+    S.ctx = null;
+    const insecure = !window.isSecureContext;
+    $('startErr').textContent = insecure
+      ? 'Das Mikrofon geht nur über https:// oder als lokale Datei in Chrome. Lade die Seite z. B. auf GitHub Pages hoch.'
+      : (e && e.name === 'NotAllowedError')
+        ? 'Kein Zugriff aufs Mikrofon. Erlaube es in den Browser-Einstellungen und versuch es nochmal.'
+        : 'Das Mikrofon ließ sich nicht starten (' + (e && (e.name || e.message) || 'unbekannt') + ').';
+    $('startErr').hidden = false;
+  }
+});
+
+/* ---------- Kalibrierung ---------- */
+const Cal = { phase: null, A: [], B: [], need: 8, model: null };
+$('sens').addEventListener('input', e => setSens(e.target.value));
+
+function startCalib() {
+  Cal.A = []; Cal.B = []; Cal.model = null;
+  show('calib');
+  setPhase('A');
+  S.onHit = calHit;
+}
+function dots(n) { $('calDots').innerHTML = Array.from({ length: Cal.need }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join(''); }
+function setPhase(p) {
+  Cal.phase = p;
+  $('calPrompt').hidden = !(p === 'A' || p === 'B');
+  $('calEval').hidden = p !== 'eval';
+  $('calTempo').hidden = p !== 'tempo';
+  $('calDone').hidden = p !== 'done';
+  $('meterPanel').hidden = p === 'done';
+  if (p === 'A' || p === 'B') {
+    $('calStep').textContent = p === 'A' ? 'Schritt 1 von 3' : 'Schritt 2 von 3';
+    $('calPrompt').className = 'prompt ' + (p === 'A' ? 'a' : 'b');
+    $('calBig').textContent = p === 'A' ? L().A : L().B;
+    $('calHint').textContent = p === 'A' ? L().aHint : L().bHint;
+    dots(0);
+  } else if (p === 'eval') {
+    $('calStep').textContent = 'Schritt 2 von 3';
+  } else if (p === 'tempo') {
+    $('calStep').textContent = 'Schritt 3 von 3';
+    $('pulse').textContent = '·'; $('tempoGo').hidden = false; $('tempoSkip').hidden = false;
+    $('tempoHint').textContent = 'Hör auf die Schläge. Nach dem Vorzählen klopfst du 8-mal mit, egal welche Art.';
+  } else if (p === 'done') {
+    $('calStep').textContent = 'Fertig';
+    $('calOffset').textContent = Math.round(prof().offset * 1000) + ' ms';
+  }
+}
+function calHit({ t, f }) {
+  if (Cal.phase === 'A' || Cal.phase === 'B') {
+    const arr = Cal[Cal.phase]; arr.push(f); dots(arr.length);
+    if (arr.length >= Cal.need) {
+      if (Cal.phase === 'A') setTimeout(() => setPhase('B'), 350);
+      else setTimeout(evaluate, 300);
+      Cal.phase = 'wait';
+    }
+  } else if (Cal.phase === 'tempo' && Tempo.active) {
+    Tempo.hits.push(t);
+  }
+}
+function evaluate() {
+  const acc = DSP.loo(Cal.A, Cal.B);
+  Cal.model = DSP.train(Cal.A, Cal.B);
+  prof().model = Cal.model; save();
+  $('calAcc').textContent = Math.round(acc * 100) + ' %';
+  let v;
+  if (acc >= 0.9) v = 'Sehr gut. Die zwei Schläge klingen klar unterschiedlich.';
+  else if (acc >= 0.75) v = 'Geht, aber es wird ab und zu daneben liegen. Mehr Abstand zwischen den Stellen hilft, oder das Handy weiter an eine Seite schieben.';
+  else v = S.mode === 'lr'
+    ? 'Links und rechts klingen an diesem Tisch zu ähnlich. Schieb das Handy näher an eine Seite oder probier den Modus „Dumpf / Hell“.'
+    : 'Die zwei Schlagarten klingen zu ähnlich. Klopf die hellen Schläge härter mit den Knöcheln und die dumpfen weich mit der ganzen Hand.';
+  $('calVerdict').textContent = v;
+  setPhase('eval');
+}
+$('calRedo').addEventListener('click', startCalib);
+$('calToTempo').addEventListener('click', () => setPhase('tempo'));
+$('calBack').addEventListener('click', () => { S.onHit = null; Tempo.active = false; prof().model ? openSongs() : show('start'); });
+
+/* Takt-Messung: Verzögerung von Mikrofon und Lautsprecher */
+const Tempo = { active: false, hits: [], T0: 0, beat: 60 / 90, raf: 0 };
+$('tempoGo').addEventListener('click', () => {
+  const c = S.ctx; Tempo.hits = []; Tempo.active = true;
+  Tempo.T0 = c.currentTime + 0.6;
+  for (let i = 0; i < 12; i++) tone(i < 4 ? 660 : 440, Tempo.T0 + i * Tempo.beat, 0.22, 0.2, 'sine', 0.01);
+  $('tempoGo').hidden = true; $('tempoSkip').hidden = true;
+  $('tempoHint').textContent = 'Erst 4 hohe Töne zum Vorzählen, dann bei jedem tiefen Ton klopfen.';
+  const loop = () => {
+    const now = c.currentTime - (c.outputLatency || 0) - Tempo.T0;
+    const i = Math.floor(now / Tempo.beat), ph = now / Tempo.beat - i;
+    const p = $('pulse');
+    if (i >= 0 && i < 12) { p.textContent = i < 4 ? String(4 - i) : String(i - 3); p.classList.toggle('beat', ph < 0.18); }
+    if (now < 12.3 * Tempo.beat) Tempo.raf = requestAnimationFrame(loop);
+    else finishTempo();
+  };
+  Tempo.raf = requestAnimationFrame(loop);
+});
+function finishTempo() {
+  Tempo.active = false; $('pulse').classList.remove('beat');
+  const ds = [];
+  for (const t of Tempo.hits) {
+    const k = Math.round((t - Tempo.T0) / Tempo.beat);
+    if (k < 4 || k > 11) continue;
+    const d = t - (Tempo.T0 + k * Tempo.beat);
+    if (Math.abs(d) < 0.25) ds.push(d);
+  }
+  if (ds.length >= 4) {
+    ds.sort((a, b) => a - b);
+    prof().offset = ds[Math.floor(ds.length / 2)]; save();
+    setPhase('done');
+  } else {
+    $('tempoHint').textContent = 'Zu wenige Schläge erkannt (' + ds.length + ' von 8). Nochmal versuchen, gern etwas kräftiger.';
+    $('tempoGo').hidden = false; $('tempoSkip').hidden = false;
+  }
+}
+$('tempoSkip').addEventListener('click', () => setPhase('done'));
+$('doneTest').addEventListener('click', startTest);
+$('donePlay').addEventListener('click', openSongs);
+
+/* ---------- Test ---------- */
+const T = { target: 0, n: 0, ok: 0 };
+function startTest() {
+  if (!prof().model) return startCalib();
+  T.n = 0; T.ok = 0; T.target = Math.random() < 0.5 ? 0 : 1;
+  show('test'); renderTest(null);
+  S.onHit = ({ f }) => {
+    const r = DSP.classify(prof().model, f);
+    hitSound(r.cls);
+    T.n++; const good = r.cls === T.target; if (good) T.ok++;
+    renderTest(r, good);
+    T.target = Math.random() < 0.5 ? 0 : 1;
+    setTimeout(() => renderTarget(), 250);
+  };
+}
+function renderTarget() {
+  $('testTarget').textContent = T.target ? L().B : L().A;
+  $('testTarget').style.color = T.target ? 'var(--ka)' : 'var(--don)';
+}
+function renderTest(r, good) {
+  renderTarget();
+  const res = $('testRes');
+  if (r) {
+    res.textContent = r.cls ? L().B : L().A;
+    res.className = 'result-big ' + (r.cls ? 'b' : 'a');
+    $('testConf').style.width = Math.round(r.conf * 100) + '%';
+    $('testMark').textContent = good ? 'Richtig' : 'Daneben';
+    $('testMark').className = 'mark ' + (good ? 'good' : 'bad');
+  } else {
+    res.innerHTML = '&nbsp;'; $('testConf').style.width = '0'; $('testMark').innerHTML = '&nbsp;';
+  }
+  $('testAcc').textContent = T.n ? Math.round(T.ok / T.n * 100) + ' %' : '–';
+  $('testCount').textContent = T.n ? `${T.ok} von ${T.n} Schlägen richtig erkannt` : 'Noch keine Schläge';
+}
+$('testBack').addEventListener('click', openSongs);
+$('testPlay').addEventListener('click', openSongs);
+$('testRecal').addEventListener('click', startCalib);
+
+/* ---------- Lieder ---------- */
+const SONGS = [
+  { id: 'spaziergang', name: 'Spaziergang', lvl: 1, lvlName: 'Leicht', bpm: 84, bars: 16, lead: 2.2,
+    pats: ['D...D...', 'D...K...', 'D...D...', 'K...K...', 'D.D.D...', 'D...K...', 'K...D...', 'D.D.K...'] },
+  { id: 'festumzug', name: 'Festumzug', lvl: 2, lvlName: 'Mittel', bpm: 104, bars: 20, lead: 1.9,
+    pats: ['D.D.K...', 'D.K.D.K.', 'DD..K...', 'D...KK..', 'D.D.D.K.', 'K.D.K.D.', 'DDD.K...', 'D.KKD...'] },
+  { id: 'gewitter', name: 'Gewitter', lvl: 3, lvlName: 'Schwer', bpm: 124, bars: 24, lead: 1.6,
+    pats: ['DKDKD...', 'DDK.DDK.', 'D.KKD.KK', 'DKKDDKK.', 'DDDDK.K.', 'KDKDD.D.', 'D.DKD.DK', 'DDKKDDK.'] }
+];
+const CHORDS = [[62, 65, 69], [60, 64, 67], [58, 62, 65], [57, 60, 64]];
+
+function openSongs() {
+  S.onHit = null;
+  if (!prof().model) return startCalib();
+  show('songs');
+  $('legend').innerHTML = `<span><i style="background:var(--don)"></i>Rot = ${L().don}</span><span><i style="background:var(--ka)"></i>Blau = ${L().ka}</span>`;
+  const best = prof().best || {};
+  $('songList').innerHTML = SONGS.map(s => `
+    <button class="song" data-id="${s.id}">
+      <span><b>${s.name}</b><span class="small muted">${s.bpm} BPM · ${best[s.id] != null ? 'Bestwert ' + best[s.id] + ' %' : 'noch nicht gespielt'}</span></span>
+      <span class="lvl l${s.lvl}">${s.lvlName}</span>
+    </button>`).join('');
+  for (const b of $('songList').querySelectorAll('.song')) b.addEventListener('click', () => startGame(SONGS.find(s => s.id === b.dataset.id)));
+  renderOffset();
+}
+function renderOffset() { $('offVal').textContent = Math.round(prof().offset * 1000) + ' ms'; }
+$('offMinus').addEventListener('click', () => { prof().offset -= 0.01; save(); renderOffset(); });
+$('offPlus').addEventListener('click', () => { prof().offset += 0.01; save(); renderOffset(); });
+$('songsTest').addEventListener('click', startTest);
+$('songsRecal').addEventListener('click', startCalib);
+
+/* ---------- Spiel ---------- */
+const WIN_GOOD = 0.07, WIN_OK = 0.14;
+let G = null, raf = 0, sched = 0, wakeLock = null;
+
+function buildNotes(song) {
+  const beat = 60 / song.bpm, notes = [];
+  for (let b = 0; b < song.bars; b++) {
+    const pat = b === song.bars - 1 ? 'D.......' : song.pats[(b * 5 + ((b / 4) | 0) * 3) % song.pats.length];
+    for (let k = 0; k < 8; k++) {
+      const ch = pat[k];
+      if (ch === 'D' || ch === 'K') notes.push({ t: (4 + b * 4 + k / 2) * beat, type: ch === 'D' ? 0 : 1, done: false });
+    }
+  }
+  return notes;
+}
+
+function startGame(song) {
+  const c = S.ctx;
+  G = { song, beat: 60 / song.bpm, notes: buildNotes(song), start: c.currentTime + 0.8, nextBeat: 0,
+        gut: 0, ok: 0, wrong: 0, miss: 0, combo: 0, maxCombo: 0, score: 0, deltas: [], pops: [], flash: null, ended: false };
+  G.end = G.notes[G.notes.length - 1].t + 1.6;
+  G.totalBeats = 4 + song.bars * 4;
+  show('game');
+  $('gameFoot').textContent = `Rot = ${L().don} · Blau = ${L().ka}`;
+  updateHud();
+  S.onHit = gameHit;
+  sched = setInterval(scheduler, 25); scheduler();
+  try { navigator.wakeLock && navigator.wakeLock.request('screen').then(l => wakeLock = l).catch(() => {}); } catch (e) {}
+  resizeLane();
+  raf = requestAnimationFrame(frame);
+}
+function stopGameLoop() {
+  cancelAnimationFrame(raf); clearInterval(sched);
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+function scheduler() {
+  if (!G) return;
+  const c = S.ctx;
+  while (G.nextBeat <= G.totalBeats && G.start + G.nextBeat * G.beat < c.currentTime + 0.25) {
+    const i = G.nextBeat, t = G.start + i * G.beat;
+    if (i < 4) tone(660, t, 0.2, 0.18, 'sine', 0.01);
+    else if (i < G.totalBeats) {
+      const bar = ((i - 4) / 4) | 0, chord = CHORDS[bar % CHORDS.length];
+      tone(mtof(chord[0] - 24), t, G.beat * 0.9, 0.28, 'sine', 0.02);
+      if ((i - 4) % 4 === 0) pad(chord, t, G.beat * 4);
+    }
+    G.nextBeat++;
+  }
+}
+function songNow() { return S.ctx.currentTime - (S.ctx.outputLatency || 0) - G.start; }
+
+function judge(note, kind, dt) {
+  note.done = true;
+  if (kind === 'gut' || kind === 'ok') {
+    G[kind]++; G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo);
+    G.score += (kind === 'gut' ? 300 : 150) + Math.min(G.combo, 50) * 4;
+    G.deltas.push(dt);
+  } else { G[kind]++; G.combo = 0; }
+  G.pops.push({ kind, at: performance.now() });
+  updateHud();
+}
+function gameHit({ t, f }) {
+  if (!G || G.ended) return;
+  const ht = t - G.start - prof().offset;
+  const r = DSP.classify(prof().model, f);
+  hitSound(r.cls);
+  G.flash = { cls: r.cls, at: performance.now() };
+  let best = null, bd = 1e9;
+  for (const n of G.notes) {
+    if (n.done) continue;
+    const d = Math.abs(n.t - ht);
+    if (d <= WIN_OK && d < bd) { best = n; bd = d; }
+    if (n.t - ht > WIN_OK) break;
+  }
+  if (!best) return;
+  if (best.type !== r.cls) judge(best, 'wrong', 0);
+  else judge(best, bd <= WIN_GOOD ? 'gut' : 'ok', ht - best.t);
+}
+function updateHud() { $('hudScore').textContent = G.score; $('hudCombo').textContent = G.combo; }
+
+const lane = $('lane'), lctx = lane.getContext('2d');
+function resizeLane() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), r = lane.getBoundingClientRect();
+  lane.width = Math.round(r.width * dpr); lane.height = Math.round(r.height * dpr);
+  lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', () => { if (G && !$('game').hidden) resizeLane(); });
+
+const COL = { don: '#e5482f', ka: '#3aa6d0', paper: '#f3e6cc', panel: '#20244a', line: '#3a4074', gold: '#f2b33d', muted: '#a3a8cf', ok: '#7fd36b' };
+const POP = { gut: ['GUT', COL.gold], ok: ['OK', COL.paper], wrong: ['FALSCH', '#ff8a78'], miss: ['VERPASST', COL.muted] };
+
+function frame() {
+  if (!G) return;
+  const now = songNow();
+  for (const n of G.notes) { if (!n.done && now - n.t > WIN_OK) judge(n, 'miss', 0); if (n.t > now) break; }
+
+  const W = lane.clientWidth, H = lane.clientHeight, cy = H / 2;
+  const laneH = Math.min(H * 0.55, 150), hitX = Math.max(70, W * 0.18), pps = (W - hitX + 40) / G.song.lead;
+  const R = laneH * 0.3;
+  lctx.clearRect(0, 0, W, H);
+  // Bahn
+  lctx.fillStyle = COL.panel; lctx.fillRect(0, cy - laneH / 2, W, laneH);
+  lctx.fillStyle = COL.line; lctx.fillRect(0, cy - laneH / 2, W, 3); lctx.fillRect(0, cy + laneH / 2 - 3, W, 3);
+  // Taktstriche
+  lctx.fillStyle = COL.line;
+  for (let b = 4; b <= G.totalBeats; b += 4) {
+    const x = hitX + (b * G.beat - now) * pps;
+    if (x > -4 && x < W + 4) lctx.fillRect(x - 1, cy - laneH / 2, 2, laneH);
+  }
+  // Trommel
+  const fl = G.flash && performance.now() - G.flash.at < 140 ? G.flash : null;
+  lctx.beginPath(); lctx.arc(hitX, cy, R * 1.35, 0, Math.PI * 2);
+  lctx.fillStyle = fl ? (fl.cls ? COL.ka : COL.don) : '#2a2f5c'; lctx.fill();
+  lctx.lineWidth = 3; lctx.strokeStyle = COL.paper; lctx.stroke();
+  lctx.beginPath(); lctx.arc(hitX, cy, R * 0.95, 0, Math.PI * 2); lctx.strokeStyle = COL.muted; lctx.lineWidth = 2; lctx.stroke();
+  // Noten (spätere zuerst, damit frühere oben liegen)
+  for (let i = G.notes.length - 1; i >= 0; i--) {
+    const n = G.notes[i]; if (n.done) continue;
+    const x = hitX + (n.t - now) * pps;
+    if (x < -R * 2 || x > W + R * 2) continue;
+    lctx.beginPath(); lctx.arc(x, cy, R, 0, Math.PI * 2);
+    lctx.fillStyle = n.type ? COL.ka : COL.don; lctx.fill();
+    lctx.lineWidth = 4; lctx.strokeStyle = COL.paper; lctx.stroke();
+  }
+  // Vorzählen
+  if (now < 4 * G.beat) {
+    const k = Math.floor(now / G.beat);
+    lctx.fillStyle = COL.paper; lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
+    lctx.font = `${Math.round(laneH * 0.6)}px ${getComputedStyle(document.documentElement).getPropertyValue('--display')}`;
+    if (k >= 0) lctx.fillText(String(4 - k), W * 0.6, cy);
+  }
+  // Bewertungen
+  const tnow = performance.now();
+  G.pops = G.pops.filter(p => tnow - p.at < 550);
+  const p = G.pops[G.pops.length - 1];
+  if (p) {
+    const a = 1 - (tnow - p.at) / 550, [txt, col] = POP[p.kind];
+    lctx.globalAlpha = a; lctx.fillStyle = col; lctx.textAlign = 'center'; lctx.textBaseline = 'bottom';
+    lctx.font = `${Math.round(Math.max(18, laneH * 0.24))}px ${getComputedStyle(document.documentElement).getPropertyValue('--display')}`;
+    lctx.fillText(txt, hitX, cy - laneH / 2 - 8 - (1 - a) * 14);
+    lctx.globalAlpha = 1;
+  }
+  if (now > G.end) return endGame();
+  raf = requestAnimationFrame(frame);
+}
+
+function endGame() {
+  if (!G || G.ended) return;
+  G.ended = true; stopGameLoop(); S.onHit = null;
+  const total = G.notes.length, acc = Math.round((G.gut + 0.5 * G.ok) / total * 100);
+  const best = prof().best || (prof().best = {});
+  const isBest = best[G.song.id] == null || acc > best[G.song.id];
+  if (isBest) { best[G.song.id] = acc; save(); }
+  show('result');
+  $('resSong').textContent = G.song.name + ' · ' + G.song.lvlName;
+  $('resTitle').textContent = acc >= 90 ? 'Meisterhaft' : acc >= 70 ? 'Stark getrommelt' : acc >= 40 ? 'Geschafft' : 'Weiter üben';
+  $('resAcc').textContent = acc + ' %';
+  $('rGut').textContent = G.gut; $('rOk').textContent = G.ok; $('rWrong').textContent = G.wrong; $('rMiss').textContent = G.miss;
+  $('rScore').textContent = G.score;
+  $('rInfo').textContent = `Längste Combo: ${G.maxCombo}` + (isBest ? ' · Neuer Bestwert' : '');
+  const box = $('rOffsetBox');
+  if (G.deltas.length >= 8) {
+    const mean = G.deltas.reduce((a, v) => a + v, 0) / G.deltas.length, ms = Math.round(mean * 1000);
+    if (Math.abs(ms) >= 15) {
+      box.hidden = false;
+      $('rOffsetText').textContent = `Deine Schläge kamen im Schnitt ${Math.abs(ms)} ms ${ms > 0 ? 'zu spät' : 'zu früh'}.`;
+      $('rOffsetApply').onclick = () => { prof().offset += mean; save(); box.hidden = true; };
+    } else box.hidden = true;
+  } else box.hidden = true;
+}
+$('hudQuit').addEventListener('click', () => { if (G) { G.ended = true; stopGameLoop(); } S.onHit = null; openSongs(); });
+$('rAgain').addEventListener('click', () => startGame(G.song));
+$('rSongs').addEventListener('click', openSongs);
+</script>
+</body>
+</html>
